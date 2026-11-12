@@ -85,12 +85,13 @@ export default async (req) => {
       if (!["yn", "min"].includes(b.type)) return json({ error: "Ukjent bettype" }, 400);
       if (b.date < todayOslo()) return json({ error: "Kan ikke bette på en dag som har vært" }, 400);
       if (res[b.date]) return json({ error: "Dagen er allerede avgjort" }, 409);
-      const stake = STAKES[b.type];
+      const stake = b.stake == null || b.stake === "" ? STAKES[b.type] : Number(b.stake);
+      if (!Number.isInteger(stake) || stake < 1) return json({ error: "Innsatsen må være et helt tall, minst 1" }, 400);
       const key = `bet/${b.date}/${b.profile}/${b.type}`;
       const old = bets.find((x) => x.id === key);
       const balance = (months[monthOf(b.date)] || fresh())[b.profile];
       if (stake > balance + (old ? old.stake : 0))
-        return json({ error: "Ikke nok credits" }, 400);
+        return json({ error: `Ikke nok credits (du har ${Math.floor(balance + (old ? old.stake : 0))})` }, 400);
       const rec = { id: key, date: b.date, profile: b.profile, type: b.type, stake, ts: Date.now() };
       if (b.type === "yn") {
         if (typeof b.late !== "boolean") return json({ error: "Velg ja eller nei" }, 400);

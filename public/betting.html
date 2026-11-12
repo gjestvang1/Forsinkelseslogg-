@@ -105,6 +105,7 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);bo
    <p class="pool" id="ynPool"></p>
    <p class="mine" id="ynMine" hidden></p>
    <p class="err" id="ynErr" role="alert"></p>
+   <label>Innsats (cr)<input type="number" id="ynStake" min="1" step="1" inputmode="numeric" placeholder="5"></label>
    <button class="go" id="ynGo" type="button">Sett bet</button>
   </div>
 
@@ -113,6 +114,7 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);bo
    <p class="pool" id="minPool"></p>
    <p class="mine" id="minMine" hidden></p>
    <label>Ditt gjett (min)<input type="number" id="guess" min="0" max="600" inputmode="numeric" placeholder="0 = i tide"></label>
+   <label>Innsats (cr)<input type="number" id="minStake" min="1" step="1" inputmode="numeric" placeholder="10"></label>
    <p class="err" id="minErr" role="alert"></p>
    <button class="go" id="minGo" type="button">Sett bet</button>
   </div>
@@ -132,8 +134,8 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);bo
   <p><span id="stat">Kobler til …</span></p>
   <p>Hver måned er en egen runde: alle starter den 1. med 100 credits. Tidligere måneder kan du se under «Resultater per måned». Man kan bette på i dag og senere dager, og endre eller trekke bettet til dagen er avgjort.</p>
   <p>Dagen avgjøres automatisk når en forsinkelse registreres i loggen. Kom hun i tide, trykker noen «Hun kom i tide».</p>
-  <p>Ja/nei koster 5 credits. Alle som traff deler likt det de som bommet satset, og får sine egne 5 tilbake.</p>
-  <p>Minutter koster 10 credits. Den som gjetter nærmest vinner hele potten. Er flere like nære, deles potten likt. Andres gjett vises først når dagen er avgjort.</p>
+  <p>Du velger innsatsen selv (står feltet tomt, blir det 5 på ja/nei og 10 på minutter). Alle som traff ja/nei deler det de som bommet satset, i forhold til hvor mye hver satset, og får sin egen innsats tilbake.</p>
+  <p>På minutter vinner den som gjetter nærmest hele potten. Er flere like nære, deles potten i forhold til innsatsen. Andres gjett vises først når dagen er avgjort.</p>
   <p>Er du alene om et bet, eller traff alle (eller ingen), får alle innsatsen tilbake.</p>
  </div>
 </main>
@@ -154,6 +156,7 @@ const signed=n=>{n=Math.round(n);const s=el('span',n>0?'pos':n<0?'neg':'zero',(n
 const resTxt=r=>r.min>0?r.min+' min for sent':'i tide';
 
 const price=t=>(data.stakes||{yn:5,min:10})[t];
+const stakeOf=t=>{const v=$(t+'Stake').value.trim();if(v==='')return price(t);const n=parseInt(v,10);return n>=1?n:0};
 
 async function api(method,body,q){
  const h={'content-type':'application/json'};if(code)h['x-skrivekode']=code;
@@ -235,11 +238,13 @@ $('onTime').onclick=()=>{const d=$('date').value;if(confirm('Avgjøre '+dayName(
 $('reopen').onclick=()=>run(()=>api('POST',{action:'reopen',date:$('date').value}));
 $('ynGo').onclick=()=>{
  if(side===null){$('ynErr').textContent='Velg ja eller nei.';return}
- run(async()=>{await api('POST',{action:'bet',type:'yn',profile:me,date:$('date').value,late:side});side=null},'ynErr');
+ const st=stakeOf('yn');if(!st){$('ynErr').textContent='Skriv inn en innsats på minst 1 credit.';return}
+ run(async()=>{await api('POST',{action:'bet',type:'yn',profile:me,date:$('date').value,late:side,stake:st});side=null;$('ynStake').value=''},'ynErr');
 };
 $('minGo').onclick=()=>{
  if($('guess').value===''){$('minErr').textContent='Skriv inn et gjett.';return}
- run(async()=>{await api('POST',{action:'bet',type:'min',profile:me,date:$('date').value,guess:$('guess').value});ls.set('forsinkelseslogg:gjett:'+$('date').value+':'+me,$('guess').value);$('guess').value=''},'minErr');
+ const st=stakeOf('min');if(!st){$('minErr').textContent='Skriv inn en innsats på minst 1 credit.';return}
+ run(async()=>{await api('POST',{action:'bet',type:'min',profile:me,date:$('date').value,guess:$('guess').value,stake:st});$('minStake').value='';ls.set('forsinkelseslogg:gjett:'+$('date').value+':'+me,$('guess').value);$('guess').value=''},'minErr');
 };
 const withdraw=id=>run(()=>api('DELETE',null,'?id='+encodeURIComponent(id)));
 
@@ -275,7 +280,7 @@ function render(){
  const mine=(box,b,txt)=>{const m=$(box);m.hidden=!b;m.replaceChildren();if(!b)return;const w=el('button',null,'Trekk');w.type='button';w.onclick=()=>withdraw(b.id);m.append(el('span',null,txt),w)};
  mine('ynMine',myYn,myYn&&'Ditt bet: '+(myYn.late?'Ja':'Nei')+', '+myYn.stake+' cr. Velg på nytt for å endre.');
  mine('minMine',myMin,myMin&&'Ditt bet: '+(myMin.guess??(ls.get('forsinkelseslogg:gjett:'+d+':'+me)||'?'))+' min, '+myMin.stake+' cr. Skriv nytt gjett for å endre.');
- $('ynGo').textContent=myYn?'Endre bet':'Sett bet ('+price('yn')+' cr)';$('minGo').textContent=myMin?'Endre bet':'Sett bet ('+price('min')+' cr)';
+ $('ynGo').textContent=myYn?'Endre bet':'Sett bet';$('minGo').textContent=myMin?'Endre bet':'Sett bet';
 
  const R=$('result');R.replaceChildren();
  if(res&&bets.length)R.appendChild(dayBlock(d,res,bets));
