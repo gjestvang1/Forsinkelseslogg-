@@ -7,6 +7,47 @@
   const jul = new Date().getMonth() === 11 || /jul/.test(q);
   if (jul) root.classList.add("jul");
 
+  // Sarcastic casino messages. Late / on time / bet: only every 3rd to 5th time (counted per
+  // device); new record: every time. Shown on the shell so they are visible on either page.
+  const MSG = {
+    sent: ["All in på snooze-knappen. Igjen.", "Hun bløffer ikke. Hun er bare sen.", "Pokerfjes på plass. Klokka var visst ikke det.", "Bussen gikk visst. Det gjorde ikke hun.", "Kaffen er kald. Møtet er over. Velkommen!"],
+    tide: ["Royal flush! Sannsynligheten var 1 til 649 740.", "Huset taper i dag. Nyt det, det skjer ikke ofte.", "Hun møtte opp i tide. Banken er sprengt.", "I tide. Ta et skjermbilde, ingen kommer til å tro deg.", "Hun kom i tide. Klokka på kontoret er sendt til kontroll."],
+    bet: ["Smart bet. Eller rettere sagt: et trygt bet.", "Du satser mot en kvinne som bruker «snart» som klokkeslett. Modig.", "Bettet er registrert. Hennes vekkerklokke er ikke informert.", "Oddsen er god. Det er punktligheten ikke."],
+    rek: ["Jackpot! Dessverre for alle andre.", "Ny rekord. Kasinoet vurderer å oppkalle et bord etter henne.", "Rekorden er slått. Det samme er alle forventninger.", "Gratulerer, du har vært vitne til historie. Treg historie."],
+  };
+  const store = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const top = (() => { try { return window.parent.document.getElementById("track") ? window.parent : window; } catch (e) { return window; } })();
+  function showCard(icon, text, btn) {
+    const d = top.document;
+    if (top.__fxCardAt && Date.now() - top.__fxCardAt < 3000) return; // never two at once
+    top.__fxCardAt = Date.now();
+    if (!d.getElementById("fxcard-css")) {
+      const st = d.createElement("style"); st.id = "fxcard-css";
+      st.textContent = ".fxcard{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:24px;background:rgba(0,0,0,.5);animation:fxcIn .25s ease-out}.fxcard.out{opacity:0;transition:opacity .25s}.fxcard>div{max-width:340px;text-align:center;border:2px solid #E5B64A;border-radius:18px;padding:22px 20px 18px;box-shadow:0 18px 50px rgba(0,0,0,.5),inset 0 0 0 5px var(--c2),inset 0 0 0 6px rgba(229,182,74,.5);background:linear-gradient(180deg,var(--c1),var(--c2));animation:fxcPop .45s cubic-bezier(.3,1.5,.5,1)}.fxcard span{display:block;font-size:2.8rem;line-height:1}.fxcard p{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:1.25rem;line-height:1.35;color:#F6EBD0;margin:12px 0 16px}.fxcard button{font:inherit;font-family:Inter,system-ui,sans-serif;background:#E5B64A;color:#0B2F25;border:0;border-radius:999px;padding:10px 22px;font-weight:700}@keyframes fxcIn{from{opacity:0}}@keyframes fxcPop{from{transform:scale(.6) rotate(-4deg);opacity:0}}@media (prefers-reduced-motion:reduce){.fxcard,.fxcard>div{animation:none}}";
+      d.head.appendChild(st);
+    }
+    const o = d.createElement("div"); o.className = "fxcard";
+    o.style.setProperty("--c1", jul ? "#A51C2E" : "#17604A"); o.style.setProperty("--c2", jul ? "#6E1720" : "#0E3B2E");
+    const box = d.createElement("div"), i = d.createElement("span"), p = d.createElement("p"), b = d.createElement("button");
+    i.textContent = icon; p.textContent = "«" + text + "»"; b.type = "button"; b.textContent = btn;
+    box.append(i, p, b); o.appendChild(box);
+    const close = () => { o.classList.add("out"); setTimeout(() => o.remove(), 250); };
+    o.onclick = close; d.body.appendChild(o); setTimeout(close, 8000);
+  }
+  window.kasinoMsg = (kind) => {
+    const list = MSG[kind]; if (!list) return;
+    if (kind !== "rek") {
+      const k = "forsinkelseslogg:msg:" + kind, st = JSON.parse(store.get(k) || "null") || { n: 0, next: 3 + Math.floor(Math.random() * 3) };
+      st.n++;
+      if (st.n < st.next) { store.set(k, JSON.stringify(st)); return; }
+      store.set(k, JSON.stringify({ n: 0, next: 3 + Math.floor(Math.random() * 3) }));
+    }
+    const lk = "forsinkelseslogg:msg:last:" + kind, last = store.get(lk);
+    const pool = list.length > 1 ? list.filter((t) => t !== last) : list, text = pool[Math.floor(Math.random() * pool.length)];
+    store.set(lk, text);
+    showCard({ sent: "🃏", tide: "♠️", bet: "🎰", rek: "🏆" }[kind], text, kind === "rek" ? "Jackpot … OK" : "OK");
+  };
+
   // December: Santa's warning whenever a late arrival is registered.
   window.julMsg = () => {
     if (!jul) return;

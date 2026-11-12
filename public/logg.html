@@ -168,7 +168,7 @@ async function add(){
  if(!date){$('err').textContent='Velg en dato.';return}
  if(!(min>=1&&min<=600)){$('err').textContent='Skriv inn antall minutter (1–600).';return}
  $('err').textContent='';$('save').disabled=true;
- try{await api('POST',{date,min,note:$('note').value.trim()});$('min').value='';$('note').value='';await load();if(window.julMsg)julMsg()}
+ try{await api('POST',{date,min,note:$('note').value.trim()});$('min').value='';$('note').value='';await load();if(window.julMsg&&document.documentElement.classList.contains('jul'))julMsg();else if(window.kasinoMsg)kasinoMsg('sent')}
  catch(x){$('err').textContent=x.message==='kode'?'Ikke lagret: trenger skrivekode.':'Kunne ikke lagre. Prøv igjen.'}
  $('save').disabled=false;
 }
@@ -286,7 +286,7 @@ function stamp(id,on,key){
  if(!on){if(st)st.remove();return}
  if(!st){st=el('span','stamp','NY REKORD');box.appendChild(st)}
  let seen='';try{seen=localStorage.getItem('forsinkelseslogg:rekord:'+id)||''}catch(e){}
- if(seen!==key){try{localStorage.setItem('forsinkelseslogg:rekord:'+id,key)}catch(e){}if(window.fx)fx.stampIn(st)}
+ if(seen!==key){try{localStorage.setItem('forsinkelseslogg:rekord:'+id,key)}catch(e){}if(window.fx)fx.stampIn(st);if(window.kasinoMsg)setTimeout(()=>kasinoMsg('rek'),900)}
 }
 function chart(rows,avg,wk){
  while(rows.length<12){const d=new Date(rows[0].d);d.setDate(d.getDate()-7);rows.unshift({d,s:0,n:0})}
