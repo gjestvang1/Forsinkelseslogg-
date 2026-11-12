@@ -41,6 +41,7 @@
     const close = () => { o.classList.add("out"); setTimeout(() => o.remove(), 250); };
     o.onclick = close; d.body.appendChild(o); setTimeout(close, 8000);
   }
+  window.fxCard = (icon, text, btn) => { top.__fxCardAt = 0; showCard(icon, text, btn); };
   window.nyttAar = (year) => { top.__fxCardAt = 0; showCard("🎆", "Nytt år, nye muligheter for å komme tidsnok - eller ikke", "Godt nytt år … OK"); };
   window.kasinoMsg = (kind) => {
     const list = (jul ? JUL : MSG)[kind]; if (!list) return;
@@ -131,6 +132,17 @@
       setTimeout(() => { const box = el.parentNode; box && box.animate([{ transform: "translateY(0)" }, { transform: "translateY(3px)" }, { transform: "translateY(0)" }], { duration: 180 }); }, 680); },
     slide(el, rows) { el.animate([{ transform: `translateY(${rows * 100}%)`, background: "rgba(229,182,74,.15)" }, { transform: "translateY(0)", background: "transparent" }], { duration: 700, easing: "cubic-bezier(.2,.8,.3,1)" }); },
     flash(el) { el.animate([{ boxShadow: "0 0 0 0 rgba(123,224,166,0)" }, { boxShadow: "0 0 0 4px rgba(123,224,166,.8), 0 0 30px rgba(123,224,166,.6)" }, { boxShadow: "0 0 0 0 rgba(123,224,166,0)" }], { duration: 1400, iterations: 2 }); },
+    rain(label) {
+      const banner = document.createElement("div");
+      banner.className = "fxjack"; banner.textContent = label;
+      document.body.appendChild(banner);
+      banner.animate([{ transform: "translate(-50%,-50%) scale(.3)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.05)", opacity: 1, offset: 0.25 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: 0.8 }, { transform: "translate(-50%,-60%)", opacity: 0 }], { duration: 2400 }).onfinish = () => banner.remove();
+      for (let i = 0; i < 40; i++) {
+        const c = document.createElement("i"); c.className = "fxchip"; c.style.left = Math.random() * innerWidth + "px"; c.style.top = "-30px";
+        document.body.appendChild(c);
+        c.animate([{ transform: "translateY(0) rotate(0)" }, { transform: `translateY(${innerHeight + 60}px) rotate(${360 + Math.random() * 720}deg)` }], { duration: 1500 + Math.random() * 1000, delay: Math.random() * 600, easing: "cubic-bezier(.4,0,.8,.6)", fill: "backwards" }).onfinish = () => c.remove();
+      }
+    },
     jackpot(won) {
       const banner = document.createElement("div");
       banner.className = "fxjack"; banner.textContent = (jul ? "🎁 " : "🎰 ") + "+" + won + " cr";

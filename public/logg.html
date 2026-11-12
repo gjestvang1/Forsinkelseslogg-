@@ -271,6 +271,7 @@ function render(){
  // New entries since the last load: shake the big number, slide the row in.
  const fresh=prevIds?sorted.filter(e=>!prevIds.has(e.id)):[];prevIds=new Set(sorted.map(e=>e.id));
  if(fresh.length&&window.fx)fx.shake($('wk'));
+ if(window.fun)fun.logg(sorted,fresh);
  sorted.forEach(e=>{
   const row=el('div',fresh.includes(e)?'log fxnew':'log');
   const a=el('div',null,parse(e.date).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short',year:'numeric'}));
@@ -308,5 +309,6 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch
 </script>
 <script src="/swipe.js" defer></script>
 <script src="/fx.js" defer></script>
+<script src="/fun.js" defer></script>
 </body>
 </html>

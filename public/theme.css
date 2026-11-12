@@ -110,3 +110,19 @@ details.fold>summary::after{border-color:var(--accent)}
 /* Inside the shell the status bar is already cleared, so keep the top tight. */
 .embedded{padding-top:0!important}
 .embedded main{padding-top:4px}
+
+/* Jokes and Easter eggs */
+.has-suits h1::before{display:none}
+.suits{display:flex;justify-content:center;gap:14px;margin:6px 0 4px}
+.suits button{font:inherit;font-size:1.05rem;background:none;border:0;color:var(--ink);opacity:.85;padding:4px 6px;cursor:pointer;line-height:1}
+.jul .suits button{color:var(--accent)}
+.subline{text-align:center;color:var(--mute);font-style:italic;margin:-16px 0 22px;font-size:.95rem}
+.conv{margin:8px 0 0;color:var(--accent);font-size:.9rem;font-weight:600}
+.quiet{margin:6px 0 0;color:var(--mute);font-size:.85rem}
+.tower{display:flex;width:100%;flex-direction:column-reverse;align-items:center;height:30px;justify-content:flex-start;margin:4px 0 2px}
+.tower i{display:block;width:22px;height:4px;margin-top:-1px;border-radius:50%;background:var(--accent);box-shadow:0 1px 0 #8a6a1f;border:1px dashed rgba(0,0,0,.25)}
+.fx:not(.fxdone) .tower i{animation:chipin .35s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes chipin{from{transform:translateY(-10px);opacity:0}}
+.friday body::before{background:linear-gradient(110deg,transparent 40%,rgba(255,243,196,.08) 50%,transparent 60%) 0 0/300% 100%,linear-gradient(180deg,var(--felt-hi) 0,var(--felt-lo) 80%)}
+.fx.friday body::before{animation:friday 6s linear infinite}
+@keyframes friday{to{background-position:-300% 0,0 0}}

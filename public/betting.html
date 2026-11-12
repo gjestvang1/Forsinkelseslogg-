@@ -316,7 +316,9 @@ function render(){
  const P=$('players');P.replaceChildren();
  data.profiles.forEach(p=>{
   const b=el('button','player');b.type='button';b.setAttribute('aria-pressed',p.id===me);
-  b.append(el('span',null,(p.id===def?'★ ':'')+p.name),el('b',null,Math.round(p.balance)),el('small',null,'credits'));
+  // a5: a small tower of chips that follows the balance (one chip per 20 cr, max 8).
+  const tw=el('span','tower');const nC=Math.max(0,Math.min(8,Math.round(p.balance/20)));for(let i=0;i<nC;i++)tw.appendChild(el('i'));
+  b.append(el('span',null,(p.id===def?'★ ':'')+p.name),tw,el('b',null,Math.round(p.balance)),el('small',null,'credits'));
   b.onclick=()=>{me=p.id;render()};P.appendChild(b);
  });
  $('meTxt').textContent=(data.month?'Saldo for '+monthName(data.month,false)+'. ':'')+'Du spiller som '+name(me)+(me===def?' (standard på denne enheten).':'.');
@@ -418,5 +420,6 @@ pushUI().catch(x=>{$("pushTxt").textContent="Feil ved sjekk av varsler: "+(x.mes
 </script>
 <script src="/swipe.js" defer></script>
 <script src="/fx.js" defer></script>
+<script src="/fun.js" defer></script>
 </body>
 </html>
