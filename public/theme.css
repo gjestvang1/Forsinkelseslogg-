@@ -114,8 +114,8 @@ details.fold>summary::after{border-color:var(--accent)}
 /* Jokes and Easter eggs */
 .has-suits h1::before{display:none}
 .suits{display:flex;justify-content:center;gap:14px;margin:6px 0 4px}
-.suits button{font:inherit;font-size:1.05rem;background:none;border:0;color:var(--ink);opacity:.85;padding:4px 6px;cursor:pointer;line-height:1}
-.jul .suits button{color:var(--accent)}
+.suits button{font:inherit;font-family:'Inter',system-ui,sans-serif;font-size:1.2rem;font-weight:700;background:#F6EBD0;border:0;border-radius:6px;width:28px;height:34px;display:grid;place-items:center;padding:0;cursor:pointer;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.35);color:#141414;-webkit-tap-highlight-color:transparent}
+.suits button:nth-child(2),.suits button:nth-child(4){color:#C8102E}
 .subline{text-align:center;color:var(--mute);font-style:italic;margin:-16px 0 22px;font-size:.95rem}
 .conv30{margin:10px 0 0;color:var(--mute);font-size:.85rem;text-align:center}
 .conv30 b{color:var(--accent);font-weight:600}
@@ -128,3 +128,7 @@ details.fold>summary::after{border-color:var(--accent)}
 .friday body::before{background:linear-gradient(110deg,transparent 40%,rgba(255,243,196,.08) 50%,transparent 60%) 0 0/300% 100%,linear-gradient(180deg,var(--felt-hi) 0,var(--felt-lo) 80%)}
 .fx.friday body::before{animation:friday 6s linear infinite}
 @keyframes friday{to{background-position:-300% 0,0 0}}
+
+/* No text selection or iOS callout on app text; form fields stay editable. */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}

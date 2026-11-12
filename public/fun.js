@@ -113,7 +113,7 @@
     const row = document.createElement("p"); row.className = "suits";
     const seq = []; const want = "♠♥♣♦";
     for (const c of want) {
-      const b = document.createElement("button"); b.type = "button"; b.textContent = c; b.setAttribute("aria-label", "Kortsymbol " + c);
+      const b = document.createElement("button"); b.type = "button"; b.textContent = c + "\uFE0E"; b.setAttribute("aria-label", "Kortsymbol " + c);
       b.onclick = () => {
         seq.push(c); if (seq.length > 4) seq.shift();
         if (!still) b.animate([{ transform: "scale(1)" }, { transform: "scale(1.5) rotate(15deg)" }, { transform: "scale(1)" }], { duration: 300 });
