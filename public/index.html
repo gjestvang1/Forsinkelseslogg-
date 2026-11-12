@@ -8,17 +8,22 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Forsinkelser">
-<meta name="theme-color" content="#EEF2F5" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0F161C" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0E3B2E">
 <link rel="preload" href="/logg.html" as="document">
 <style>
-:root{--bg:#EEF2F5;color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#0F161C;color-scheme:dark}}
+:root{--bg:#0E3B2E;color-scheme:dark}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);overscroll-behavior:none}
 body{padding-top:env(safe-area-inset-top,0px);box-sizing:border-box}
 #view{position:relative;width:100%;height:100%;overflow:hidden}
 #track{display:flex;width:200%;height:100%;will-change:transform;transform:translate3d(0,0,0)}
 #track.anim{transition:transform .32s cubic-bezier(.22,.61,.36,1)}
+#lights{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);height:16px;z-index:6;pointer-events:none;display:flex;justify-content:space-around;border-top:2px solid #2a0508}
+#lights i{width:8px;height:11px;border-radius:50% 50% 45% 45%;margin-top:1px;animation:blink 1.6s ease-in-out infinite}
+#lights i:nth-child(4n+1){background:#FF4D4D;--g:#FF4D4D}#lights i:nth-child(4n+2){background:#FFD34D;--g:#FFD34D;animation-delay:.4s}#lights i:nth-child(4n+3){background:#4DD2FF;--g:#4DD2FF;animation-delay:.8s}#lights i:nth-child(4n){background:#7CFF6B;--g:#7CFF6B;animation-delay:1.2s}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 8px var(--g)}50%{opacity:.35;box-shadow:none}}
+#sleigh{position:fixed;top:18%;left:0;z-index:6;pointer-events:none;font-size:30px;white-space:nowrap;transform:translateX(-200px)}
+#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.jul{--bg:#5A0F16}
 iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
 </style>
 </head>
@@ -27,6 +32,9 @@ iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
  <iframe id="f0" src="/logg.html" title="Logg"></iframe>
  <iframe id="f1" src="/betting.html" title="Betting"></iframe>
 </div></div>
+<canvas id="snow" hidden></canvas>
+<div id="lights" hidden></div>
+<div id="sleigh" hidden>🦌🦌🛷🎅</div>
 <script>
 // Both pages stay loaded side by side; swiping slides the track 1:1 with the finger.
 (()=>{
@@ -59,6 +67,26 @@ iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
  go(page,false);
  addEventListener('resize',()=>go(page,false));
  addEventListener('hashchange',()=>go(location.hash==='#betting'?1:0));
+ // December: gentle snowfall over both pages.
+ if(new Date().getMonth()===11||/jul/.test(location.search)){
+  document.documentElement.classList.add('jul');
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+   const cv=document.getElementById('snow'),cx=cv.getContext('2d');cv.hidden=false;
+   let W,H,fl=[];const dpr=Math.min(2,devicePixelRatio||1);
+   const size=()=>{W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0)};size();addEventListener('resize',size);
+   for(let i=0;i<70;i++)fl.push({x:Math.random()*W,y:Math.random()*H,r:1+Math.random()*2.6,s:.3+Math.random()*.9,w:Math.random()*6.28});
+   let t0=0,run=false;const tick=t=>{run=true;const dt=Math.min(50,t-(t0||t))/16;t0=t;cx.clearRect(0,0,W,H);cx.fillStyle='rgba(255,255,255,.85)';
+    for(const f of fl){f.y+=f.s*dt;f.w+=.02*dt;f.x+=Math.sin(f.w)*.4*dt;if(f.y>H+5){f.y=-5;f.x=Math.random()*W}cx.beginPath();cx.arc(f.x,f.y,f.r,0,6.28);cx.fill()}
+    if(!document.hidden)requestAnimationFrame(tick);else{t0=0;run=false}};
+   requestAnimationFrame(tick);
+   const L=document.getElementById('lights');L.hidden=false;for(let i=0;i<Math.ceil(innerWidth/28);i++)L.appendChild(document.createElement('i'));
+   // Santa's sleigh flies across now and then.
+   const sl=document.getElementById('sleigh');sl.hidden=false;
+   const fly=()=>{if(!document.hidden)sl.animate([{transform:'translate(-200px,0) rotate(-4deg)'},{transform:'translate('+(innerWidth*.5)+'px,-30px) rotate(3deg)'},{transform:'translate('+(innerWidth+40)+'px,10px) rotate(-3deg)'}],{duration:6000,easing:'ease-in-out'});setTimeout(fly,45000+Math.random()*30000)};
+   setTimeout(fly,2500);
+   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!run)requestAnimationFrame(tick)});
+  }
+ }
  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 })();
 </script>

@@ -8,9 +8,8 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Forsinkelser">
-<meta name="theme-color" content="#EEF2F5" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0F161C" media="(prefers-color-scheme: dark)">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0E3B2E">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#EEF2F5;--surface:#fff;--ink:#16202B;--mute:#5E6C7A;--line:#D5DDE4;--accent:#D6336C;--good:#1F8A5B;color-scheme:light;
  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -98,6 +97,7 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
 .pill.on{background:color-mix(in srgb,var(--good) 18%,var(--surface));color:var(--good)}
 [hidden]{display:none!important}
 </style>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body>
 <main>
@@ -386,5 +386,6 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch
 pushUI().catch(x=>{$("pushTxt").textContent="Feil ved sjekk av varsler: "+(x.message||x)});
 </script>
 <script src="/swipe.js" defer></script>
+<script src="/fx.js" defer></script>
 </body>
 </html>

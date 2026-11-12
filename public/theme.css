@@ -1,0 +1,82 @@
+/* Kasino: green felt, gold and cream. Loaded after each page's own styles. */
+:root,:root:not([data-theme="light"]),:root[data-theme="dark"]{
+ --bg:#0E3B2E;--surface:#134A3A;--ink:#F6EBD0;--mute:#A9C2B5;--line:#2C6452;--accent:#E5B64A;--good:#7BE0A6;--bad:#FF8A80;--felt-hi:#17604A;--felt-lo:#0B2F25;color-scheme:dark}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--felt-lo) radial-gradient(ellipse at 50% 0,var(--felt-hi),var(--felt-lo) 75%) fixed}
+h1,h2,.big,.stats b,.rec b,.player b,.rank b,.day h3{font-family:'Playfair Display',Georgia,serif}
+h1{font-weight:900;color:var(--accent);letter-spacing:.005em;text-align:center;font-size:clamp(2rem,10vw,2.8rem)}
+h1::before{content:"♠ ♥ ♣ ♦";display:block;font-family:'Inter',sans-serif;font-size:.95rem;letter-spacing:.6em;color:var(--ink);margin:0 0 10px .6em;opacity:.85}
+h2{font-weight:700;color:var(--accent);font-size:1.2rem}
+nav{justify-content:center}
+nav a[aria-current]{border-bottom-color:var(--accent)}
+nav a b{background:var(--accent);color:var(--felt-lo)}
+
+/* Log page */
+.hero{border:2px solid var(--accent);border-radius:14px;padding:16px;text-align:center;background:rgba(0,0,0,.18);box-shadow:inset 0 0 0 5px var(--bg),inset 0 0 0 6px rgba(229,182,74,.5)}
+.hero small{text-transform:uppercase;letter-spacing:.2em;font-size:.72rem}
+.big{font-weight:900;color:var(--ink);letter-spacing:-.01em}
+.stats{border-bottom:0}
+.stats div{text-align:center}
+.stats b{color:var(--accent);font-weight:700}
+.lead{background:var(--ink);color:var(--felt-lo);border:0;border-radius:14px}
+.lead b,.lead small,.lead .arr{color:var(--felt-lo)}
+.lead small{opacity:.75}
+.add,.card,.rec div,details.fold,.push,.player{border-radius:14px;background:rgba(0,0,0,.16);border-color:var(--line)}
+.rec b{color:var(--accent);font-weight:900}
+.bar i{background:var(--accent);opacity:.9}
+.bar.now i{background:var(--ink)}
+.wk .t i{background:var(--accent)}
+.avgl em{background:var(--bg)}
+input,select{background:rgba(0,0,0,.22);border-color:var(--line);color:var(--ink)}
+
+/* Buttons: chips are casino chips */
+.chip{border-radius:999px;border:2px dashed var(--accent);color:var(--ink);background:rgba(0,0,0,.15);font-weight:600}
+.chip[aria-pressed=true]{background:var(--accent);color:var(--felt-lo);border-style:solid;border-color:var(--accent)}
+.chip:disabled{opacity:.35}
+.go{background:var(--accent);color:var(--felt-lo);border-radius:999px;font-weight:700;letter-spacing:.02em}
+.ghost{border-color:var(--accent);color:var(--accent);border-radius:999px}
+.seg button{border-radius:999px;border-color:var(--line)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--felt-lo);border-color:var(--ink)}
+.del,.link,.more,.mine button{color:var(--mute)}
+
+/* Betting page */
+.player{text-align:center}
+.player[aria-pressed=true]{border-color:var(--accent);background:rgba(229,182,74,.12)}
+.player b{color:var(--accent);font-weight:900}
+.status b{color:var(--accent)}
+.mine{background:rgba(229,182,74,.12);border-left-color:var(--accent)}
+.neg,.err{color:var(--bad)}
+.pos{color:var(--good)}
+.line.new{background:rgba(229,182,74,.12)}
+.day h3{border-bottom-color:var(--accent);color:var(--ink)}
+.pill{background:rgba(0,0,0,.25);color:var(--mute)}
+.pill.on{background:rgba(123,224,166,.18);color:var(--good)}
+.toast{background:var(--ink);color:var(--felt-lo)}
+details.fold>summary::after{border-color:var(--accent)}
+
+/* Animations */
+.fx h1{background:linear-gradient(100deg,var(--accent) 40%,#FFF3C4 50%,var(--accent) 60%) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 5s ease-in-out infinite}
+.fx h1::before{-webkit-text-fill-color:var(--ink)}
+@keyframes shine{0%,60%{background-position:100% 0}100%{background-position:-50% 0}}
+.fx .lead .cup{display:inline-block;animation:wobble 4s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes wobble{0%,80%,100%{transform:rotate(0)}85%{transform:rotate(-12deg)}90%{transform:rotate(10deg)}95%{transform:rotate(-5deg)}}
+.fx .rolling{color:#FFF3C4;text-shadow:0 0 18px rgba(229,182,74,.6)}
+.fx .hero,.fx .card,.fx details.fold,.fx .rec div,.fx .add{animation:deal .45s cubic-bezier(.2,.8,.3,1) both}
+.fx .card:nth-of-type(2){animation-delay:.06s}.fx .card:nth-of-type(3){animation-delay:.12s}
+@keyframes deal{from{opacity:0;transform:translateY(14px) rotate(-.6deg)}to{opacity:1;transform:none}}
+.fx .player[aria-pressed=true]{animation:glow 2.4s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 3px rgba(229,182,74,.25),0 0 22px rgba(229,182,74,.25)}}
+.fxchip{position:fixed;width:22px;height:22px;border-radius:50%;z-index:50;pointer-events:none;background:radial-gradient(circle,var(--accent) 0 38%,transparent 39%),repeating-conic-gradient(var(--ink) 0 30deg,var(--bad) 30deg 60deg);box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.fx:not(.fxdone) .bar i{transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.8,.3,1) both}
+@keyframes grow{from{transform:scaleY(0)}}
+
+/* December: Christmas party ("julebord") */
+:root.jul{--bg:#5A0F16;--surface:#6E1720;--line:#8E2A33;--mute:#E8B9B0;--felt-hi:#8A1C26;--felt-lo:#3E0A10}
+.jul h1::before{content:"❄ ✦ ❄ ✦ ❄"}
+.jul .hero{box-shadow:inset 0 0 0 5px var(--bg),inset 0 0 0 6px rgba(229,182,74,.5)}
+.jul .hero small::after{content:"  🎄"}
+.jul .lead .cup{font-size:0}.jul .lead .cup::before{content:"🎅";font-size:1.6rem}
+.jul .chip{border-color:#F6EBD0}
+.fxgift{position:fixed;width:22px;height:22px;z-index:50;pointer-events:none;font-style:normal;font-size:20px;line-height:22px;text-align:center}
+.fx.jul .lead .cup::before{display:inline-block;animation:wobble 3s ease-in-out infinite;transform-origin:50% 90%}
+.fx.jul h1::before{animation:twinkle 2.2s ease-in-out infinite}
+@keyframes twinkle{50%{opacity:.35}}
