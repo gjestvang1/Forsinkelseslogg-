@@ -106,3 +106,7 @@ details.fold>summary::after{border-color:var(--accent)}
 .julmsg button{background:var(--accent);color:#3E0A10;border:0;border-radius:999px;padding:10px 22px;font-weight:700}
 @keyframes jmIn{from{opacity:0}}
 @keyframes jmPop{from{transform:scale(.6) rotate(-4deg);opacity:0}}
+
+/* Inside the shell the status bar is already cleared, so keep the top tight. */
+.embedded{padding-top:0!important}
+.embedded main{padding-top:4px}

@@ -5,6 +5,7 @@
   let pager = null;
   try { if (window.parent !== window) pager = window.parent.pager; } catch (e) {}
   if (!pager) { location.replace(me ? "/#betting" : "/"); return; } // opened directly: load the shell
+  document.documentElement.classList.add("embedded"); // the shell already clears the status bar
   document.querySelectorAll("nav a[data-page]").forEach((a) =>
     a.addEventListener("click", (e) => { e.preventDefault(); pager.go(+a.dataset.page); }));
   let x0 = 0, y0 = 0, dx = 0, mode = "", lastX = 0, lastT = 0, v = 0;
