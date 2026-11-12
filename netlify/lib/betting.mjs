@@ -97,7 +97,7 @@ async function push(s, msg, exceptProfile) {
   const subs = (await all(s, "sub/")).filter((x) => x.profile !== exceptProfile);
   if (!subs.length) return;
   const k = await vapid(s);
-  const payload = JSON.stringify({ url: "/betting.html", ...msg });
+  const payload = JSON.stringify({ url: "/#betting", ...msg });
   await Promise.allSettled(
     subs.map((x) =>
       webpush

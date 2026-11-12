@@ -8,16 +8,17 @@ self.addEventListener("push", (e) => {
     badge: "/icon-192.png",
     tag: "bet",
     renotify: true,
-    data: { url: d.url || "/betting.html" },
+    data: { url: d.url || "/#betting" },
   }));
 });
 
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  const url = e.notification.data?.url || "/betting.html";
+  const url = e.notification.data?.url || "/#betting";
   e.waitUntil((async () => {
     const wins = await clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const w of wins) if (w.url.includes(url) && "focus" in w) return w.focus();
+    const top = wins.find((w) => w.frameType !== "nested" && new URL(w.url).pathname === "/");
+    if (top) { await top.focus(); return top.navigate ? top.navigate(url).catch(() => {}) : undefined; }
     return clients.openWindow(url);
   })());
 });
