@@ -76,6 +76,22 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);bo
 .rank b{font-weight:800}
 .sub{color:var(--mute);font-size:.85rem;margin:4px 0 0}
 .push .ghost{padding:10px}
+.chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.err:empty{display:none}
+.chip{background:none;border:1px solid var(--line);color:var(--ink);padding:8px 2px;white-space:nowrap;min-height:40px;font-weight:600}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stakeLbl{font-size:.85rem;color:var(--mute);margin:0 0 -4px}
+details.fold{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-top:12px}
+details.fold>summary{list-style:none;cursor:pointer;padding:14px 16px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(45deg);margin-right:4px;transition:transform .15s}
+details.fold[open]>summary::after{transform:rotate(-135deg)}
+details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
+.foldBody{padding:0 16px 14px}
+.foldBody .push{margin-top:8px}
+.foldBody .note{margin-top:0;font-size:.85rem}
+.me{margin-top:8px}
+.stat{color:var(--mute);font-size:.8rem;margin:18px 0 0}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -86,8 +102,7 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);bo
 
  <section>
   <div class="players" id="players"></div>
-  <div class="me"><span id="meTxt"></span><button class="link" id="setDef" type="button">Bruk som standard på denne enheten</button><button class="link" id="rename" type="button">Endre navn</button></div>
-  <div class="push"><b>Varsler</b><p id="pushTxt">Sjekker om varsler er mulig …</p><button class="ghost" id="pushBtn" type="button" hidden></button></div>
+  <div class="me"><span id="meTxt"></span></div>
  </section>
 
  <h2>Velg dag</h2>
@@ -105,7 +120,9 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);bo
    <p class="pool" id="ynPool"></p>
    <p class="mine" id="ynMine" hidden></p>
    <p class="err" id="ynErr" role="alert"></p>
-   <label>Innsats (cr)<input type="number" id="ynStake" min="1" step="1" inputmode="numeric" placeholder="5"></label>
+   <p class="stakeLbl">Innsats (credits)</p>
+   <div class="chips" id="ynChips"></div>
+   <label id="ynOwn" hidden>Eget beløp (cr)<input type="number" id="ynStake" min="1" step="1" inputmode="numeric" placeholder="f.eks. 35"></label>
    <button class="go" id="ynGo" type="button">Sett bet</button>
   </div>
 
@@ -114,30 +131,38 @@ select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);bo
    <p class="pool" id="minPool"></p>
    <p class="mine" id="minMine" hidden></p>
    <label>Ditt gjett (min)<input type="number" id="guess" min="0" max="600" inputmode="numeric" placeholder="0 = i tide"></label>
-   <label>Innsats (cr)<input type="number" id="minStake" min="1" step="1" inputmode="numeric" placeholder="10"></label>
+   <p class="stakeLbl">Innsats (credits)</p>
+   <div class="chips" id="minChips"></div>
+   <label id="minOwn" hidden>Eget beløp (cr)<input type="number" id="minStake" min="1" step="1" inputmode="numeric" placeholder="f.eks. 35"></label>
    <p class="err" id="minErr" role="alert"></p>
    <button class="go" id="minGo" type="button">Sett bet</button>
   </div>
  </div>
  <div id="result"></div>
 
- <h2>Åpne bets</h2>
- <div id="open"></div>
+ <details class="fold" id="fOpen"><summary>Åpne bets <small id="openCount"></small></summary><div class="foldBody"><div id="open"></div></div></details>
 
- <h2>Resultater per måned</h2>
- <label>Måned<select id="month"></select></label>
- <div id="standings"></div>
- <div id="hist"></div>
- <button class="link" id="reset" type="button" hidden>Nullstill alle bets denne måneden</button>
+ <details class="fold" id="fRes"><summary>Resultater og stilling <small id="resSum"></small></summary><div class="foldBody">
+  <label>Måned<select id="month"></select></label>
+  <div id="standings"></div>
+  <div id="hist"></div>
+  <button class="link" id="reset" type="button" hidden>Nullstill alle bets denne måneden</button>
+ </div></details>
 
- <div class="note">
-  <p><span id="stat">Kobler til …</span></p>
+ <details class="fold" id="fSet"><summary>Profil og varsler</summary><div class="foldBody">
+  <div class="me"><button class="link" id="setDef" type="button">Bruk som standard på denne enheten</button><button class="link" id="rename" type="button">Endre navn</button></div>
+  <div class="push"><b>Varsler</b><p id="pushTxt">Sjekker om varsler er mulig …</p><button class="ghost" id="pushBtn" type="button" hidden></button></div>
+ </div></details>
+
+ <details class="fold" id="fRules"><summary>Slik fungerer det</summary><div class="foldBody"><div class="note">
   <p>Hver måned er en egen runde: alle starter den 1. med 100 credits. Tidligere måneder kan du se under «Resultater per måned». Man kan bette på i dag og senere dager, og endre eller trekke bettet til dagen er avgjort.</p>
   <p>Dagen avgjøres automatisk når en forsinkelse registreres i loggen. Kom hun i tide, trykker noen «Hun kom i tide».</p>
-  <p>Du velger innsatsen selv (står feltet tomt, blir det 5 på ja/nei og 10 på minutter). Alle som traff ja/nei deler det de som bommet satset, i forhold til hvor mye hver satset, og får sin egen innsats tilbake.</p>
+  <p>Du velger innsatsen selv med knappene, eller skriver inn et eget beløp. Alle som traff ja/nei deler det de som bommet satset, i forhold til hvor mye hver satset, og får sin egen innsats tilbake.</p>
   <p>På minutter vinner den som gjetter nærmest hele potten. Er flere like nære, deles potten i forhold til innsatsen. Andres gjett vises først når dagen er avgjort.</p>
   <p>Er du alene om et bet, eller traff alle (eller ingen), får alle innsatsen tilbake.</p>
- </div>
+ </div></div></details>
+
+ <p class="stat"><span id="stat">Kobler til …</span> Sveip til høyre for loggen.</p>
 </main>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -156,7 +181,20 @@ const signed=n=>{n=Math.round(n);const s=el('span',n>0?'pos':n<0?'neg':'zero',(n
 const resTxt=r=>r.min>0?r.min+' min for sent':'i tide';
 
 const price=t=>(data.stakes||{yn:5,min:10})[t];
-const stakeOf=t=>{const v=$(t+'Stake').value.trim();if(v==='')return price(t);const n=parseInt(v,10);return n>=1?n:0};
+const STEPS=[5,10,20,50];
+const pick={yn:null,min:null},own={yn:false,min:false};
+const stakeOf=t=>{if(!own[t])return pick[t]??price(t);const n=parseInt($(t+'Stake').value,10);return n>=1?n:0};
+function chipUI(t,avail){
+ const C=$(t+'Chips');
+ if(!C.children.length){
+  STEPS.forEach(n=>{const b=el('button','chip',String(n));b.type='button';b.dataset.n=n;b.onclick=()=>{pick[t]=n;own[t]=false;chipUI(t)};C.appendChild(b)});
+  const o=el('button','chip','Eget');o.type='button';o.dataset.n='own';o.onclick=()=>{own[t]=true;chipUI(t);$(t+'Stake').focus()};C.appendChild(o);
+ }
+ const cur=pick[t]??price(t);
+ [...C.children].forEach(b=>{const n=b.dataset.n;b.setAttribute('aria-pressed',n==='own'?own[t]:!own[t]&&+n===cur);if(avail!=null&&n!=='own')b.disabled=+n>avail});
+ $(t+'Own').hidden=!own[t];
+}
+const clearStake=t=>{own[t]=false;pick[t]=null;$(t+'Stake').value='';chipUI(t)};
 
 async function api(method,body,q){
  const h={'content-type':'application/json'};if(code)h['x-skrivekode']=code;
@@ -239,13 +277,16 @@ $('reopen').onclick=()=>run(()=>api('POST',{action:'reopen',date:$('date').value
 $('ynGo').onclick=()=>{
  if(side===null){$('ynErr').textContent='Velg ja eller nei.';return}
  const st=stakeOf('yn');if(!st){$('ynErr').textContent='Skriv inn en innsats på minst 1 credit.';return}
- run(async()=>{await api('POST',{action:'bet',type:'yn',profile:me,date:$('date').value,late:side,stake:st});side=null;$('ynStake').value=''},'ynErr');
+ run(async()=>{await api('POST',{action:'bet',type:'yn',profile:me,date:$('date').value,late:side,stake:st});side=null;clearStake('yn')},'ynErr');
 };
 $('minGo').onclick=()=>{
  if($('guess').value===''){$('minErr').textContent='Skriv inn et gjett.';return}
  const st=stakeOf('min');if(!st){$('minErr').textContent='Skriv inn en innsats på minst 1 credit.';return}
- run(async()=>{await api('POST',{action:'bet',type:'min',profile:me,date:$('date').value,guess:$('guess').value,stake:st});$('minStake').value='';ls.set('forsinkelseslogg:gjett:'+$('date').value+':'+me,$('guess').value);$('guess').value=''},'minErr');
+ run(async()=>{await api('POST',{action:'bet',type:'min',profile:me,date:$('date').value,guess:$('guess').value,stake:st});clearStake('min');ls.set('forsinkelseslogg:gjett:'+$('date').value+':'+me,$('guess').value);$('guess').value=''},'minErr');
 };
+['yn','min'].forEach(t=>{$(t+'Chips').addEventListener('click',render);$(t+'Stake').addEventListener('input',render)});
+// Remember which sections are open on this device.
+document.querySelectorAll('details.fold').forEach(d=>{const k='forsinkelseslogg:fold:'+d.id;if(ls.get(k)==='1')d.open=true;d.addEventListener('toggle',()=>ls.set(k,d.open?'1':'0'))});
 const withdraw=id=>run(()=>api('DELETE',null,'?id='+encodeURIComponent(id)));
 
 function render(){
@@ -280,7 +321,9 @@ function render(){
  const mine=(box,b,txt)=>{const m=$(box);m.hidden=!b;m.replaceChildren();if(!b)return;const w=el('button',null,'Trekk');w.type='button';w.onclick=()=>withdraw(b.id);m.append(el('span',null,txt),w)};
  mine('ynMine',myYn,myYn&&'Ditt bet: '+(myYn.late?'Ja':'Nei')+', '+myYn.stake+' cr. Velg på nytt for å endre.');
  mine('minMine',myMin,myMin&&'Ditt bet: '+(myMin.guess??(ls.get('forsinkelseslogg:gjett:'+d+':'+me)||'?'))+' min, '+myMin.stake+' cr. Skriv nytt gjett for å endre.');
- $('ynGo').textContent=myYn?'Endre bet':'Sett bet';$('minGo').textContent=myMin?'Endre bet':'Sett bet';
+ $('ynGo').textContent=(myYn?'Endre bet':'Sett bet')+' · '+stakeOf('yn')+' cr';$('minGo').textContent=(myMin?'Endre bet':'Sett bet')+' · '+stakeOf('min')+' cr';
+ const myBal=Math.floor((data.profiles.find(p=>p.id===me)||{}).balance??0);
+ chipUI('yn',myBal+(myYn?myYn.stake:0));chipUI('min',myBal+(myMin?myMin.stake:0));
 
  const R=$('result');R.replaceChildren();
  if(res&&bets.length)R.appendChild(dayBlock(d,res,bets));
@@ -288,6 +331,7 @@ function render(){
  // Every open bet, newest first, so everyone sees when someone has placed one.
  const O=$('open');O.replaceChildren();
  const open=data.bets.filter(b=>!data.results[b.date]).sort((a,b)=>b.ts-a.ts);
+ $('openCount').textContent=open.length?open.length+(open.length===1?' bet':' bets'):'';
  if(!open.length)O.appendChild(el('p','empty','Ingen åpne bets.'));
  open.forEach(b=>{
   const r=el('div',seen.has(b.id)?'line new':'line'),a=el('div',null,name(b.profile)+': '+betTxt(b));
@@ -302,6 +346,7 @@ function render(){
  const S=$('standings');S.replaceChildren();
  const ranked=data.profiles.map(p=>({p,v:bal[p.id]??data.start})).sort((a,b)=>b.v-a.v);
  ranked.forEach((x,i)=>{const r=el('div','rank');r.append(el('i',null,(i+1)+'.'),el('span',null,x.p.name+(i===0&&!cur&&x.v>ranked[1].v?' 🏆':'')),el('b',null,Math.round(x.v)+' cr'));S.appendChild(r)});
+ const lead=ranked[0];$('resSum').textContent=lead?(cur?'Leder: ':'Vinner: ')+lead.p.name:'';
  const rs=(data.resets||{})[selMonth];
  S.appendChild(el('p','sub',(cur?'Stillingen så langt. Åpne bets er trukket fra.':'Sluttresultat for '+monthName(selMonth,false)+'.')+(rs?' Nullstilt '+when(rs)+'.':'')));
 
@@ -332,5 +377,6 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 pushUI().catch(x=>{$("pushTxt").textContent="Feil ved sjekk av varsler: "+(x.message||x)});
 </script>
+<script src="/swipe.js" defer></script>
 </body>
 </html>

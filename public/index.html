@@ -100,7 +100,7 @@ button{font:inherit;cursor:pointer;border-radius:6px}
  <h2>Alle registreringer</h2>
  <div id="log"></div>
 
- <p class="note"><span id="stat">Kobler til …</span> Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med.</p>
+ <p class="note"><span id="stat">Kobler til …</span> Sveip til venstre for betting. Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med.</p>
 </main>
 
 <script>
@@ -228,5 +228,6 @@ setInterval(()=>{if(!document.hidden)load()},10000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
+<script src="/swipe.js" defer></script>
 </body>
 </html>
