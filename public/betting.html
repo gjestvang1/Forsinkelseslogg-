@@ -114,7 +114,7 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
  <div class="card">
   <label>Dato<input type="date" id="date"></label>
   <p class="status" id="status"></p>
-  <button class="ghost" id="onTime" type="button" hidden>Hun kom i tide – avgjør dagen</button>
+  <div class="seg" id="settleRow" hidden><button class="ghost" id="late" type="button">Hun kom for sent</button><button class="ghost" id="onTime" type="button">Hun kom i tide</button></div>
   <button class="link" id="reopen" type="button" hidden>Angre «i tide» og åpne dagen igjen</button>
  </div>
 
@@ -160,7 +160,7 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
 
  <details class="fold" id="fRules"><summary>Slik fungerer det</summary><div class="foldBody"><div class="note">
   <p>Hver måned er en egen runde: alle starter den 1. med 100 credits. Tidligere måneder kan du se under «Resultater per måned». Man kan bette på i dag og senere dager, og endre eller trekke bettet til dagen er avgjort.</p>
-  <p>Dagen avgjøres automatisk når en forsinkelse registreres i loggen. Kom hun i tide, trykker noen «Hun kom i tide».</p>
+  <p>Dagen avgjøres når noen trykker «Hun kom for sent» (minuttene lagres i loggen) eller «Hun kom i tide», eller når en forsinkelse registreres i loggen.</p>
   <p>Du velger innsatsen selv med knappene, eller skriver inn et eget beløp. Alle som traff ja/nei deler det de som bommet satset, i forhold til hvor mye hver satset, og får sin egen innsats tilbake.</p>
   <p>På minutter vinner den som gjetter nærmest hele potten. Er flere like nære, deles potten i forhold til innsatsen. Andres gjett vises først når dagen er avgjort.</p>
   <p>Er du alene om et bet, eller traff alle (eller ingen), får alle innsatsen tilbake.</p>
@@ -281,6 +281,18 @@ $('pushBtn').onclick=async()=>{
  pushUI();
 };
 $('rename').onclick=()=>{const n=prompt('Nytt navn for '+name(me)+':',name(me));if(n&&n.trim())run(()=>api('POST',{action:'rename',profile:me,name:n.trim()}))};
+// Late: write the minutes to the log, which settles the day (and updates the log page right away).
+$('late').onclick=()=>{
+ const d=$('date').value,v=prompt('Hvor mange minutter for sent kom hun '+dayName(d)+'?');if(v==null)return;
+ const min=parseInt(v,10);if(!(min>=1&&min<=600)){alert('Skriv et tall mellom 1 og 600.');return}
+ run(async()=>{
+  const send=()=>fetch('/api/entries',{method:'POST',headers:Object.assign({'content-type':'application/json'},code?{'x-skrivekode':code}:{}),body:JSON.stringify({date:d,min,note:''})});
+  let r=await send();
+  while(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(!c)throw new Error('Trenger skrivekode.');code=c.trim();ls.set(CKEY,code);r=await send()}
+  if(!r.ok)throw new Error('Kunne ikke lagre i loggen. Prøv igjen.');
+  try{parent.document.getElementById('f0').contentWindow.load()}catch(e){}
+ });
+};
 $('onTime').onclick=()=>{const d=$('date').value;if(confirm('Avgjøre '+dayName(d)+' som «i tide»?'))run(()=>api('POST',{action:'settle',date:d}))};
 $('reopen').onclick=()=>run(()=>api('POST',{action:'reopen',date:$('date').value}));
 $('ynGo').onclick=()=>{
@@ -316,7 +328,7 @@ function render(){
  if(res){$('status').append('Avgjort: ',el('b',null,resTxt(res)),res.source==='logg'?' (fra loggen).':'.')}
  else if(past)$('status').textContent='Ikke avgjort ennå. Nye bets er stengt for dager som har vært.';
  else $('status').textContent=d===today?'Åpen for bets. Avgjøres når forsinkelsen registreres i loggen, eller når noen trykker «i tide».':'Åpen for bets.';
- $('onTime').hidden=!!res||!d||!today||d>today;
+ $('settleRow').hidden=!!res||!d||!today||d>today;
  $('reopen').hidden=!(res&&res.source==='manuell');
 
  $('betting').hidden=!!res||past;

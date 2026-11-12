@@ -95,3 +95,4 @@ details.fold>summary::after{border-color:var(--accent)}
 .stamp{position:absolute;right:8px;bottom:10px;transform:rotate(-7deg);font-family:'Inter',sans-serif;font-weight:800;font-size:.62rem;letter-spacing:.1em;color:var(--bad);border:2.5px solid var(--bad);border-radius:4px;padding:3px 7px;background:rgba(0,0,0,.15);pointer-events:none}
 .fx .fxnewlead span::after{content:" 🏆";display:inline-block;animation:bounce .8s cubic-bezier(.3,1.6,.5,1) 3}
 @keyframes bounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-8px) scale(1.15)}}
+#settleRow button{border-color:var(--accent);color:var(--accent)}
