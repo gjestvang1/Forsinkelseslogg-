@@ -64,7 +64,9 @@ export default async (req) => {
       if (parts.length) await push(betStore(), { title: "NY REKORD", body: parts.join(" · "), tag: "rekord", url: "/#logg", vibrate: [200, 100, 200, 100, 400] }).catch(() => {});
     }
     if (settles) await notifyResult(betStore(), b.date).catch(() => {});
-    return json(rec, 201);
+    // First late arrival of a new year (only once there is earlier history).
+    const firstOfYear = old.length > 0 && !old.some((e) => e.date.slice(0, 4) === b.date.slice(0, 4));
+    return json({ ...rec, firstOfYear }, 201);
   }
 
   if (req.method === "DELETE") {

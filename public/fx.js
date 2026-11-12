@@ -41,6 +41,7 @@
     const close = () => { o.classList.add("out"); setTimeout(() => o.remove(), 250); };
     o.onclick = close; d.body.appendChild(o); setTimeout(close, 8000);
   }
+  window.nyttAar = (year) => { top.__fxCardAt = 0; showCard("🎆", "Nytt år, nye muligheter for å komme tidsnok - eller ikke", "Godt nytt år … OK"); };
   window.kasinoMsg = (kind) => {
     const list = (jul ? JUL : MSG)[kind]; if (!list) return;
     if (kind !== "rek") {

@@ -168,7 +168,7 @@ async function add(){
  if(!date){$('err').textContent='Velg en dato.';return}
  if(!(min>=1&&min<=600)){$('err').textContent='Skriv inn antall minutter (1–600).';return}
  $('err').textContent='';$('save').disabled=true;
- try{await api('POST',{date,min,note:$('note').value.trim()});$('min').value='';$('note').value='';await load();if(window.kasinoMsg)kasinoMsg('sent')}
+ try{const saved=await api('POST',{date,min,note:$('note').value.trim()});$('min').value='';$('note').value='';await load();if(saved&&saved.firstOfYear&&window.nyttAar)nyttAar();else if(window.kasinoMsg)kasinoMsg('sent')}
  catch(x){$('err').textContent=x.message==='kode'?'Ikke lagret: trenger skrivekode.':'Kunne ikke lagre. Prøv igjen.'}
  $('save').disabled=false;
 }
