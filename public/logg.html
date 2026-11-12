@@ -57,6 +57,26 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .wk .v{text-align:right;font-weight:600;white-space:nowrap}
 .log{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
 .log small{display:block;color:var(--mute)}
+.lead{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 22px;color:var(--ink)}
+.lead .cup{font-size:1.6rem;line-height:1}
+.lead b{display:block;font-size:1rem}
+.lead small{display:block;color:var(--mute);font-size:.82rem}
+.lead .arr{margin-left:auto;color:var(--mute);font-size:1.2rem}
+.chart{position:relative;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;align-items:end;height:150px;margin-top:8px;border-bottom:1px solid var(--line)}
+.bar{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.bar i{display:block;width:100%;max-width:26px;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;opacity:.85}
+.bar.zero i{background:var(--line);opacity:1}
+.bar.now i{opacity:1}
+.bar span{position:absolute;font-size:.68rem;color:var(--mute);white-space:nowrap;padding-bottom:2px}
+.avgl{position:absolute;left:0;right:0;border-top:1.5px dashed var(--mute);opacity:.6;pointer-events:none}
+.avgl em{position:absolute;right:0;top:-1.3em;font-style:normal;font-size:.68rem;color:var(--mute);background:var(--bg);padding-left:4px}
+.wlab{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;font-size:.68rem;color:var(--mute);text-align:center;margin-top:4px}
+.cnote{color:var(--mute);font-size:.8rem;margin:8px 0 0}
+.rec{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rec div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.rec span{display:block;color:var(--mute);font-size:.82rem}
+.rec b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.03em;color:var(--accent);line-height:1.2}
+.rec small{display:block;color:var(--mute);font-size:.8rem}
 .del{background:none;border:0;color:var(--mute);padding:6px;text-decoration:underline}
 .more{background:none;border:0;color:var(--ink);text-decoration:underline;padding:10px 0}
 .empty{color:var(--mute);padding:8px 0}
@@ -69,6 +89,7 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 <main>
  <nav><a href="/#logg" data-page="0" aria-current="page">Logg</a><a href="/#betting" data-page="1" id="betLink">Betting</a></nav>
  <h1>Forsinkelseslogg</h1>
+ <button class="lead" id="lead" type="button" hidden><span class="cup">🏆</span><span><b id="leadT"></b><small id="leadS"></small></span><span class="arr">›</span></button>
 
  <section class="hero">
   <small>Forsinket denne uken</small>
@@ -91,6 +112,17 @@ button{font:inherit;cursor:pointer;border-radius:6px}
   <p class="dup" id="dup" role="status" hidden></p>
   <p class="err" id="err" role="alert"></p>
   <button class="go" id="save">Legg til</button>
+ </div>
+
+ <h2>Siste 12 uker</h2>
+ <div class="chart" id="chart"></div>
+ <div class="wlab" id="wlab"></div>
+ <p class="cnote" id="chartNote"></p>
+
+ <h2>Rekorder</h2>
+ <div class="rec">
+  <div><span>Verste dag</span><b id="rDay">–</b><small id="rDayS"></small></div>
+  <div><span>Verste uke</span><b id="rWk">–</b><small id="rWkS"></small></div>
  </div>
 
  <h2>Uke for uke</h2>
@@ -158,10 +190,23 @@ async function betBadge(){
  try{
   const d=await (await fetch('/api/betting',{cache:'no-store'})).json();
   const n=d.bets.filter(b=>b.date===d.today&&!d.results[b.date]).length;
+  leader(d);
   $('betLink').replaceChildren('Betting');
   if(n)$('betLink').appendChild(el('b',null,n+(n===1?' bet i dag':' bets i dag')));
  }catch(e){}
 }
+// Banner: who leads this month's betting, and who won last month.
+const mName=m=>{const[y,mo]=m.split('-').map(Number);return new Date(y,mo-1,1).toLocaleDateString('nb-NO',{month:'long'})};
+function leader(d){
+ const months=d.months||{},cur=d.month,names=Object.fromEntries((d.profiles||[]).map(p=>[p.id,p.name]));
+ const top=bal=>{const a=Object.entries(bal||{}).sort((x,y)=>y[1]-x[1]);return a.length&&(a.length<2||a[0][1]>a[1][1])?{n:names[a[0][0]]||a[0][0],v:Math.round(a[0][1])}:null};
+ const now=top(months[cur]),prevKey=Object.keys(months).filter(m=>m<cur).sort().pop(),prev=prevKey&&top(months[prevKey]);
+ if(!now&&!prev){$('lead').hidden=true;return}
+ $('leadT').textContent=now?now.n+' leder '+mName(cur)+' med '+now.v+' cr':'Ingen leder i '+mName(cur)+' ennå';
+ $('leadS').textContent=prev?'Vinner i '+mName(prevKey)+': '+prev.n+' ('+prev.v+' cr)':'Trykk for å bette';
+ $('lead').hidden=false;
+}
+$('lead').onclick=()=>{try{if(parent.pager)return parent.pager.go(1)}catch(e){}location.href='/#betting'};
 function checkDup(){
  const d=$('date').value,box=$('dup');
  const hit=d?entries.filter(e=>e.date===d):[];
@@ -189,7 +234,7 @@ function render(){
  if(!entries.length){
   $('avg').textContent='0 min';$('moreW').hidden=true;
   W.appendChild(el('p','empty','Ingen registreringer ennå. Legg inn første forsinkelse over.'));
-  L.appendChild(el('p','empty','Tomt her også.'));return;
+  L.appendChild(el('p','empty','Tomt her også.'));$('chart').replaceChildren();$('wlab').replaceChildren();['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='');return;
  }
  const sorted=[...entries].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
  const first=monday(parse(sorted[sorted.length-1].date));
@@ -202,6 +247,13 @@ function render(){
  const rows=[];
  for(let d=new Date(end);d>=first;d.setDate(d.getDate()-7)){const k=iso(d);rows.push({d:new Date(d),s:(by[k]||{s:0}).s,n:(by[k]||{n:0}).n})}
  const max=Math.max(...rows.map(r=>r.s),1);
+ chart(rows.slice(0,12).reverse(),sum(entries)/nWeeks,wk);
+ // Records: the single worst day and the worst week (all minutes that day/week added up).
+ const byDay={};entries.forEach(e=>{byDay[e.date]=(byDay[e.date]||0)+e.min});
+ const wd=Object.entries(byDay).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?1:-1))[0];
+ $('rDay').textContent=fmt(wd[1]);$('rDayS').textContent=parse(wd[0]).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
+ const ww=rows.reduce((m,r)=>r.s>m.s?r:m,rows[0]);
+ $('rWk').textContent=fmt(ww.s);$('rWkS').textContent='Uke '+isoWeek(ww.d)+', '+ww.d.getFullYear()+' ('+ww.n+(ww.n===1?' gang':' ganger')+')';
  (showAll?rows:rows.slice(0,8)).forEach(r=>{
   const row=el('div','wk');
   const a=el('div',null,'Uke '+isoWeek(r.d));
@@ -222,6 +274,19 @@ function render(){
   d.onclick=()=>{if(confirm('Slette denne registreringen?'))remove(e.id)};
   row.append(a,b,d);L.appendChild(row);
  });
+}
+function chart(rows,avg,wk){
+ while(rows.length<12){const d=new Date(rows[0].d);d.setDate(d.getDate()-7);rows.unshift({d,s:0,n:0})}
+ const C=$('chart'),Lb=$('wlab');C.replaceChildren();Lb.replaceChildren();
+ const max=Math.max(...rows.map(r=>r.s),avg,1);
+ rows.forEach(r=>{
+  const b=el('div','bar'+(r.s?'':' zero')+(r.d.getTime()===wk.getTime()?' now':''));
+  const h=r.s/max*82;const i=document.createElement('i');i.style.height=h+'%';
+  if(r.s){const v=el('span',null,fmt(r.s).replace(' min','m'));v.style.bottom=h+'%';b.append(v)}
+  b.append(i);C.appendChild(b);Lb.appendChild(el('span',null,isoWeek(r.d)));
+ });
+ if(avg>0){const a=el('div','avgl');a.style.bottom=(avg/max*82)+'%';C.appendChild(a)}
+ $('chartNote').textContent='Stiplet linje: snitt per uke ('+fmt(avg)+'). Tallene under er ukenummer.';
 }
 load();
 setInterval(()=>{if(!document.hidden)load()},10000);
