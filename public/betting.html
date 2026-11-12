@@ -219,6 +219,7 @@ async function load(){
   $('stat').textContent='Delt mellom alle med lenken, oppdateres automatisk.';
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
  render();
+ if(data.today)jackpot();
 }
 // Tell the viewer when someone else places or changes a bet while the page is open.
 let seen=new Set(),toastT;
@@ -334,7 +335,9 @@ function render(){
  chipUI('yn',myBal+(myYn?myYn.stake:0));chipUI('min',myBal+(myMin?myMin.stake:0));
 
  const R=$('result');R.replaceChildren();
- if(res&&bets.length)R.appendChild(dayBlock(d,res,bets));
+ if(res&&bets.length){const blk=dayBlock(d,res,bets);R.appendChild(blk);
+  // Flip the guesses over the first time this settled day is shown.
+  if(!flipped.has(d)){flipped.add(d);blk.querySelectorAll('.line').forEach((l,i)=>{l.classList.add('fxflip');l.style.animationDelay=(i*.12)+'s'})}}
 
  // Every open bet, newest first, so everyone sees when someone has placed one.
  const O=$('open');O.replaceChildren();
@@ -353,7 +356,11 @@ function render(){
  const cur=selMonth===data.month,bal=(data.months||{})[selMonth]||{};
  const S=$('standings');S.replaceChildren();
  const ranked=data.profiles.map(p=>({p,v:bal[p.id]??data.start})).sort((a,b)=>b.v-a.v);
- ranked.forEach((x,i)=>{const r=el('div','rank');r.append(el('i',null,(i+1)+'.'),el('span',null,x.p.name+(i===0&&!cur&&x.v>ranked[1].v?' 🏆':'')),el('b',null,Math.round(x.v)+' cr'));S.appendChild(r)});
+ // Leader change: slide rows from their old place.
+ const order=ranked.map(x=>x.p.id),moved=prevOrder&&prevOrder.join()!==order.join()&&prevMonth===selMonth;
+ ranked.forEach((x,i)=>{const r=el('div','rank');
+  if(moved&&window.fx){const was=prevOrder.indexOf(x.p.id);if(was>=0&&was!==i)fx.slide(r,(was-i));if(i===0&&was!==0)r.classList.add('fxnewlead')}r.append(el('i',null,(i+1)+'.'),el('span',null,x.p.name+(i===0&&!cur&&x.v>ranked[1].v?' 🏆':'')),el('b',null,Math.round(x.v)+' cr'));S.appendChild(r)});
+ prevOrder=order;prevMonth=selMonth;
  const lead=ranked[0];$('resSum').textContent=lead?(cur?'Leder: ':'Vinner: ')+lead.p.name:'';
  const rs=(data.resets||{})[selMonth];
  S.appendChild(el('p','sub',(cur?'Stillingen så langt. Åpne bets er trukket fra.':'Sluttresultat for '+monthName(selMonth,false)+'.')+(rs?' Nullstilt '+when(rs)+'.':'')));
@@ -364,7 +371,17 @@ function render(){
  days.forEach(x=>H.appendChild(dayBlock(x,data.results[x],data.bets.filter(b=>b.date===x))));
  $('reset').hidden=!cur;
 }
-let selMonth='';
+let selMonth='',prevOrder=null,prevMonth='';const flipped=new Set();
+// Jackpot: when a newly settled day gave you a profit, rain gold coins once.
+function jackpot(){
+ const K='forsinkelseslogg:sett:'+me;let seen=null;try{seen=JSON.parse(localStorage.getItem(K)||'null')}catch(e){}
+ const days=Object.keys(data.results||{});
+ if(!seen){try{localStorage.setItem(K,JSON.stringify(days))}catch(e){}return}
+ const fresh=days.filter(x=>!seen.includes(x));if(!fresh.length)return;
+ try{localStorage.setItem(K,JSON.stringify(days))}catch(e){}
+ const won=data.bets.filter(b=>fresh.includes(b.date)&&b.profile===me&&b.payout!=null).reduce((s,b)=>s+b.payout-b.stake,0);
+ if(won>0&&window.fx){fx.jackpot(Math.round(won));const pb=document.querySelector('.player[aria-pressed=true]');if(pb)fx.flash(pb)}
+}
 const monthName=(m,cap)=>{const[y,mo]=m.split('-').map(Number),t=new Date(y,mo-1,1).toLocaleDateString('nb-NO',{month:'long',year:y===new Date().getFullYear()?undefined:'numeric'});return cap?t[0].toUpperCase()+t.slice(1):t};
 $('month').addEventListener('change',e=>{selMonth=e.target.value;render()});
 $('reset').onclick=()=>{if(confirm('Nullstille alle bets i '+monthName(data.month,false)+'? Alle får 100 credits igjen, og bets lagt inn hittil denne måneden teller ikke lenger.'))run(()=>api('POST',{action:'reset'}))};

@@ -150,7 +150,7 @@ const isoWeek=d=>{const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDa
 const fmt=m=>{m=Math.round(m);if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return h+' t'+(r?' '+r+' min':'')};
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const sum=a=>a.reduce((s,e)=>s+e.min,0);
-let showAll=false;
+let showAll=false,prevIds=null;
 
 [5,10,15,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.onclick=()=>{$('min').value=n;$('min').focus()};$('chips').appendChild(b)});
 $('date').value=iso(new Date());
@@ -253,6 +253,9 @@ function render(){
  const wd=Object.entries(byDay).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?1:-1))[0];
  $('rDay').textContent=fmt(wd[1]);$('rDayS').textContent=parse(wd[0]).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
  const ww=rows.reduce((m,r)=>r.s>m.s?r:m,rows[0]);
+ // «NY REKORD» stamp while the record is fresh (day: last 3 days, week: this week); animate the first time.
+ const fresh3=(Date.now()-parse(wd[0]).getTime())<3*864e5;
+ stamp('rDay',fresh3&&wd[1]>0,'d'+wd[0]+wd[1]);stamp('rWk',ww.d.getTime()===wk.getTime()&&ww.s>0&&rows.length>1,'w'+iso(ww.d)+ww.s);
  $('rWk').textContent=fmt(ww.s);$('rWkS').textContent='Uke '+isoWeek(ww.d)+', '+ww.d.getFullYear()+' ('+ww.n+(ww.n===1?' gang':' ganger')+')';
  (showAll?rows:rows.slice(0,8)).forEach(r=>{
   const row=el('div','wk');
@@ -265,8 +268,11 @@ function render(){
  $('moreW').hidden=rows.length<=8;
  $('moreW').textContent=showAll?'Vis færre uker':'Vis alle '+rows.length+' uker';
 
+ // New entries since the last load: shake the big number, slide the row in.
+ const fresh=prevIds?sorted.filter(e=>!prevIds.has(e.id)):[];prevIds=new Set(sorted.map(e=>e.id));
+ if(fresh.length&&window.fx)fx.shake($('wk'));
  sorted.forEach(e=>{
-  const row=el('div','log');
+  const row=el('div',fresh.includes(e)?'log fxnew':'log');
   const a=el('div',null,parse(e.date).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short',year:'numeric'}));
   if(e.note)a.appendChild(el('small',null,e.note));
   const b=el('b',null,fmt(e.min));
@@ -274,6 +280,13 @@ function render(){
   d.onclick=()=>{if(confirm('Slette denne registreringen?'))remove(e.id)};
   row.append(a,b,d);L.appendChild(row);
  });
+}
+function stamp(id,on,key){
+ const box=$(id).parentNode;let st=box.querySelector('.stamp');
+ if(!on){if(st)st.remove();return}
+ if(!st){st=el('span','stamp','NY REKORD');box.appendChild(st)}
+ let seen='';try{seen=localStorage.getItem('forsinkelseslogg:rekord:'+id)||''}catch(e){}
+ if(seen!==key){try{localStorage.setItem('forsinkelseslogg:rekord:'+id,key)}catch(e){}if(window.fx)fx.stampIn(st)}
 }
 function chart(rows,avg,wk){
  while(rows.length<12){const d=new Date(rows[0].d);d.setDate(d.getDate()-7);rows.unshift({d,s:0,n:0})}

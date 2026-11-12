@@ -135,4 +135,4 @@ async function notifyResult(s, date) {
   });
 }
 
-export { store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, all, state, vapid, subKey, notifyBet, notifyResult };
+export { push, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, all, state, vapid, subKey, notifyBet, notifyResult };

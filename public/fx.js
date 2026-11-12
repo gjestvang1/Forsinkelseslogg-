@@ -57,7 +57,29 @@
   document.addEventListener("click", (e) => {
     const b = e.target.closest("#ynGo,#minGo,#save");
     if (b) setTimeout(() => { if (!document.querySelector(".err:not(:empty)")) chips(b); }, 0);
+    if (e.target.closest(".chip,.seg button,.player,.go") && navigator.vibrate) { try { navigator.vibrate(12); } catch (x) {} } // Android only
     const c = e.target.closest(".chip,.seg button,.player");
     if (c) c.animate([{ transform: "scale(.9)" }, { transform: "scale(1.06)" }, { transform: "scale(1)" }], { duration: 260, easing: "ease-out" });
   });
+
+  // Helpers the pages call when something happens.
+  window.fx = {
+    shake(el) { el && el.animate([{ transform: "translateX(0)" }, { transform: "translateX(-8px) rotate(-1deg)" }, { transform: "translateX(7px) rotate(1deg)" }, { transform: "translateX(-4px)" }, { transform: "translateX(0)" }], { duration: 480, easing: "ease-out" }); },
+    stampIn(el) { el.animate([{ transform: "rotate(-7deg) scale(2.6)", opacity: 0 }, { transform: "rotate(-7deg) scale(.92)", opacity: 1, offset: 0.7 }, { transform: "rotate(-7deg) scale(1)", opacity: 1 }], { duration: 520, easing: "cubic-bezier(.3,1.4,.5,1)", delay: 300, fill: "backwards" });
+      setTimeout(() => { const box = el.parentNode; box && box.animate([{ transform: "translateY(0)" }, { transform: "translateY(3px)" }, { transform: "translateY(0)" }], { duration: 180 }); }, 680); },
+    slide(el, rows) { el.animate([{ transform: `translateY(${rows * 100}%)`, background: "rgba(229,182,74,.15)" }, { transform: "translateY(0)", background: "transparent" }], { duration: 700, easing: "cubic-bezier(.2,.8,.3,1)" }); },
+    flash(el) { el.animate([{ boxShadow: "0 0 0 0 rgba(123,224,166,0)" }, { boxShadow: "0 0 0 4px rgba(123,224,166,.8), 0 0 30px rgba(123,224,166,.6)" }, { boxShadow: "0 0 0 0 rgba(123,224,166,0)" }], { duration: 1400, iterations: 2 }); },
+    jackpot(won) {
+      const banner = document.createElement("div");
+      banner.className = "fxjack"; banner.textContent = (jul ? "🎁 " : "🎰 ") + "+" + won + " cr";
+      document.body.appendChild(banner);
+      banner.animate([{ transform: "translate(-50%,-50%) scale(.3)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.1)", opacity: 1, offset: 0.25 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: 0.8 }, { transform: "translate(-50%,-60%) scale(1)", opacity: 0 }], { duration: 2400, easing: "ease-out" }).onfinish = () => banner.remove();
+      for (let i = 0; i < 36; i++) {
+        const c = document.createElement("i");
+        c.className = "fxcoin"; c.style.left = Math.random() * innerWidth + "px";
+        document.body.appendChild(c);
+        c.animate([{ transform: `translateY(-40px) rotateY(0)` }, { transform: `translateY(${innerHeight + 40}px) rotateY(${720 + Math.random() * 720}deg)` }], { duration: 1400 + Math.random() * 1000, delay: Math.random() * 700, easing: "cubic-bezier(.4,0,.8,.6)", fill: "backwards" }).onfinish = () => c.remove();
+      }
+    },
+  };
 })();

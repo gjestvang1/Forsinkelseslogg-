@@ -6,8 +6,9 @@ self.addEventListener("push", (e) => {
     body: d.body || "",
     icon: "/icon-192.png",
     badge: "/icon-192.png",
-    tag: "bet",
+    tag: d.tag || "bet",
     renotify: true,
+    vibrate: d.vibrate || [120, 60, 120],
     data: { url: d.url || "/#betting" },
   }));
 });
