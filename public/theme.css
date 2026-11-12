@@ -109,7 +109,7 @@ details.fold>summary::after{border-color:var(--accent)}
 
 /* Inside the shell the status bar is already cleared, so keep the top tight. */
 .embedded{padding-top:0!important}
-.embedded main{padding-top:4px}
+.embedded main{padding-top:22px}
 
 /* Jokes and Easter eggs */
 .has-suits h1::before{display:none}
@@ -117,6 +117,8 @@ details.fold>summary::after{border-color:var(--accent)}
 .suits button{font:inherit;font-size:1.05rem;background:none;border:0;color:var(--ink);opacity:.85;padding:4px 6px;cursor:pointer;line-height:1}
 .jul .suits button{color:var(--accent)}
 .subline{text-align:center;color:var(--mute);font-style:italic;margin:-16px 0 22px;font-size:.95rem}
+.conv30{margin:10px 0 0;color:var(--mute);font-size:.85rem;text-align:center}
+.conv30 b{color:var(--accent);font-weight:600}
 .conv{margin:8px 0 0;color:var(--accent);font-size:.9rem;font-weight:600}
 .quiet{margin:6px 0 0;color:var(--mute);font-size:.85rem}
 .tower{display:flex;width:100%;flex-direction:column-reverse;align-items:center;height:30px;justify-content:flex-start;margin:4px 0 2px}

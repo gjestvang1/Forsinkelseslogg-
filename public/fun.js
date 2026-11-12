@@ -51,7 +51,7 @@
 
   function el(tag, cls, after) { let e = document.querySelector(tag + "." + cls); if (!e) { e = document.createElement(tag); e.className = cls; after.insertAdjacentElement("afterend", e); } return e; }
 
-  let lastWeek = null, lastSub = "", lastConv = "";
+  let lastWeek = null, lastSub = "", lastConv = "", last30 = null, lastConv30 = "";
   function logg(entries, fresh) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const wk = monday(today).getTime();
@@ -66,6 +66,16 @@
     }
     el("p", "subline", h1).textContent = fridayAfternoon() ? "Hun kom kanskje sent, men går presis." : lastSub;
     el("p", "conv", big).textContent = lastConv;
+    // Same kind of comment for the last 30 days, under the stats row.
+    const d30 = new Date(today); d30.setDate(d30.getDate() - 30);
+    const m30 = entries.filter((e) => { const t = parse(e.date); return t >= d30 && t <= today; }).reduce((s, e) => s + e.min, 0);
+    if (m30 !== last30) {
+      last30 = m30;
+      const opts = m30 ? CONV.map((f) => f(m30)).filter(Boolean).filter((t) => t !== lastConv30 && t !== lastConv) : ZERO;
+      lastConv30 = pick(opts.length ? opts : ZERO);
+    }
+    const stats = document.querySelector(".stats");
+    if (stats) { const c = el("p", "conv30", stats); c.replaceChildren(); const b = document.createElement("b"); b.textContent = "Siste 30 dager "; c.append(b, lastConv30.replace(/^0 min /, "")); }
     // i6: no delays for a while.
     const last = entries.reduce((m, e) => (e.date > m ? e.date : m), "");
     const days = last ? Math.round((today - parse(last)) / 864e5) : 0;
