@@ -6,6 +6,18 @@
   try { q += window.parent.location.search + window.parent.location.hash; } catch (e) {}
   const jul = new Date().getMonth() === 11 || /jul/.test(q);
   if (jul) root.classList.add("jul");
+
+  // December: Santa's warning whenever a late arrival is registered.
+  window.julMsg = () => {
+    if (!jul) return;
+    const o = document.createElement("div");
+    o.className = "julmsg";
+    o.innerHTML = '<div><span>🎅</span><p>«Dersom Skogli-nissen fortsetter slik, vil ikke alle snille barn få julegave i år»</p><button type="button">Ho ho … OK</button></div>';
+    const close = () => { o.classList.add("out"); setTimeout(() => o.remove(), 250); };
+    o.onclick = close;
+    document.body.appendChild(o);
+    setTimeout(close, 8000);
+  };
   if (still) return;
   root.classList.add("fx");
   setTimeout(() => root.classList.add("fxdone"), 2500); // play entrance animations only once
