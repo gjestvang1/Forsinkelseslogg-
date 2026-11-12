@@ -1,7 +1,10 @@
 /* Kasino: green felt, gold and cream. Loaded after each page's own styles. */
 :root,:root:not([data-theme="light"]),:root[data-theme="dark"]{
  --bg:#0E3B2E;--surface:#134A3A;--ink:#F6EBD0;--mute:#A9C2B5;--line:#2C6452;--accent:#E5B64A;--good:#7BE0A6;--bad:#FF8A80;--felt-hi:#17604A;--felt-lo:#0B2F25;color-scheme:dark}
-body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--felt-lo) radial-gradient(ellipse at 50% 0,var(--felt-hi),var(--felt-lo) 75%) fixed}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--felt-lo)}
+/* The felt: a fixed layer so its top edge is always exactly --felt-hi, matching the strip
+   behind the Dynamic Island (index.html #cap). */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,var(--felt-hi) 0,var(--felt-lo) 80%)}
 h1,h2,.big,.stats b,.rec b,.player b,.rank b,.day h3{font-family:'Playfair Display',Georgia,serif}
 h1{font-weight:900;color:var(--accent);letter-spacing:.005em;text-align:center;font-size:clamp(2rem,10vw,2.8rem)}
 h1::before{content:"♠ ♥ ♣ ♦";display:block;font-family:'Inter',sans-serif;font-size:.95rem;letter-spacing:.6em;color:var(--ink);margin:0 0 10px .6em;opacity:.85}

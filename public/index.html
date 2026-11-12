@@ -13,21 +13,23 @@
 <meta name="theme-color" content="#0E3B2E">
 <link rel="preload" href="/logg.html" as="document">
 <style>
-:root{--bg:#0E3B2E;color-scheme:dark}
+:root{--bg:#0E3B2E;--cap:#17604A;color-scheme:dark}
+.jul{--cap:#8A1C26}
+[hidden]{display:none!important}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);overscroll-behavior:none}
 /* The pages sit below the status bar / Dynamic Island. --sat is env() or a measured fallback. */
 :root{--sat:env(safe-area-inset-top,0px)}
-#cap{position:fixed;left:0;right:0;top:0;height:var(--sat);background:var(--bg);z-index:4}
+#cap{position:fixed;left:0;right:0;top:0;height:var(--sat);background:var(--cap);z-index:4}
 #view{position:fixed;left:0;right:0;bottom:0;top:var(--sat);overflow:hidden}
 #track{display:flex;width:200%;height:100%;will-change:transform;transform:translate3d(0,0,0)}
 #track.anim{transition:transform .32s cubic-bezier(.22,.61,.36,1)}
-#lights{position:fixed;left:0;right:0;top:var(--sat);height:16px;z-index:6;pointer-events:none;display:flex;justify-content:space-around;border-top:2px solid #2a0508}
+#lights{position:fixed;left:0;right:0;top:var(--sat);height:16px;z-index:6;pointer-events:none;display:flex;justify-content:space-around}
 #lights i{width:8px;height:11px;border-radius:50% 50% 45% 45%;margin-top:1px;animation:blink 1.6s ease-in-out infinite}
 #lights i:nth-child(4n+1){background:#FF4D4D;--g:#FF4D4D}#lights i:nth-child(4n+2){background:#FFD34D;--g:#FFD34D;animation-delay:.4s}#lights i:nth-child(4n+3){background:#4DD2FF;--g:#4DD2FF;animation-delay:.8s}#lights i:nth-child(4n){background:#7CFF6B;--g:#7CFF6B;animation-delay:1.2s}
 @keyframes blink{0%,100%{opacity:1;box-shadow:0 0 8px var(--g)}50%{opacity:.35;box-shadow:none}}
 #sleigh{position:fixed;top:18%;left:0;z-index:6;pointer-events:none;font-size:30px;white-space:nowrap;transform:translateX(-200px)}
 #snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
-.jul{--bg:#5A0F16}
+.jul{--bg:#5A0F16;--cap:#8A1C26}
 iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
 </style>
 </head>
