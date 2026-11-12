@@ -15,6 +15,13 @@
     bet: ["Smart bet. Eller rettere sagt: et trygt bet.", "Du satser mot en kvinne som bruker «snart» som klokkeslett. Modig.", "Bettet er registrert. Hennes vekkerklokke er ikke informert.", "Oddsen er god. Det er punktligheten ikke."],
     rek: ["Jackpot! Dessverre for alle andre.", "Ny rekord. Kasinoet vurderer å oppkalle et bord etter henne.", "Rekorden er slått. Det samme er alle forventninger.", "Gratulerer, du har vært vitne til historie. Treg historie."],
   };
+  // December uses its own (chosen) Christmas messages, with the same rules.
+  const JUL = {
+    sent: ["Dersom Skogli-nissen fortsetter slik, vil ikke alle snille barn få julegave i år.", "Rudolf har rød nese av å vente på henne.", "Sleden går klokka åtte. Hun valgte neste.", "Til og med pepperkakene var ferdig stekt før hun kom.", "Juletreet står klart. Kollegaen er fortsatt underveis.", "Grøten er kald. Mandelen er funnet. Hun er ikke her.", "Dette er grunnen til at hun alltid får julegaven sist.", "Et mirakel i desember ville vært at hun kom i tide. Det ble ikke i dag.", "Julebordet starter klokka 19. Vi sier 18 til henne."],
+    tide: ["I tide! Nissen gnir seg i øynene og sjekker listen på nytt.", "Hun kom i tide. Det kan bare forklares med julestemning.", "Skogli-nissen leverte i tide. Det skjer bare én gang i året.", "Noen har puttet en vekkerklokke i julestrømpa hennes."],
+    bet: ["Bettet er lagt under treet. Pakkes opp når hun kommer.", "Nissen noterer bettet ditt. Han vet hvem som har vært slem.", "Du satser på at hun er sen i desember. Det er som å satse på snø i Tromsø.", "Sjetongene ligger i julestrømpa. Lykke til."],
+    rek: ["Ny rekord! Skogli-nissen er offisielt verdens tregeste sledefører.", "Rekorden er slått. Den lengste natten i året fikk konkurranse.", "Ny rekord. Nissen flytter henne permanent til den slemme listen.", "Gratulerer! Årets julegave til kontoret: ny rekord i forsinkelse."],
+  };
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
   const top = (() => { try { return window.parent.document.getElementById("track") ? window.parent : window; } catch (e) { return window; } })();
   function showCard(icon, text, btn) {
@@ -35,7 +42,7 @@
     o.onclick = close; d.body.appendChild(o); setTimeout(close, 8000);
   }
   window.kasinoMsg = (kind) => {
-    const list = MSG[kind]; if (!list) return;
+    const list = (jul ? JUL : MSG)[kind]; if (!list) return;
     if (kind !== "rek") {
       const k = "forsinkelseslogg:msg:" + kind, st = JSON.parse(store.get(k) || "null") || { n: 0, next: 3 + Math.floor(Math.random() * 3) };
       st.n++;
@@ -45,7 +52,8 @@
     const lk = "forsinkelseslogg:msg:last:" + kind, last = store.get(lk);
     const pool = list.length > 1 ? list.filter((t) => t !== last) : list, text = pool[Math.floor(Math.random() * pool.length)];
     store.set(lk, text);
-    showCard({ sent: "🃏", tide: "♠️", bet: "🎰", rek: "🏆" }[kind], text, kind === "rek" ? "Jackpot … OK" : "OK");
+    if (jul) showCard({ sent: "🎅", tide: "🎄", bet: "🎁", rek: "🦌" }[kind], text, "Ho ho … OK");
+    else showCard({ sent: "🃏", tide: "♠️", bet: "🎰", rek: "🏆" }[kind], text, kind === "rek" ? "Jackpot … OK" : "OK");
   };
 
   // December: Santa's warning whenever a late arrival is registered.

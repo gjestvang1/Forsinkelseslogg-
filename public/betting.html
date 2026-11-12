@@ -291,7 +291,7 @@ $('late').onclick=()=>{
   while(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(!c)throw new Error('Trenger skrivekode.');code=c.trim();ls.set(CKEY,code);r=await send()}
   if(!r.ok)throw new Error('Kunne ikke lagre i loggen. Prøv igjen.');
   try{parent.document.getElementById('f0').contentWindow.load()}catch(e){}
-  if(window.julMsg&&document.documentElement.classList.contains('jul'))julMsg();else if(window.kasinoMsg)kasinoMsg('sent');
+  if(window.kasinoMsg)kasinoMsg('sent');
  });
 };
 $('onTime').onclick=()=>{const d=$('date').value;if(confirm('Avgjøre '+dayName(d)+' som «i tide»?'))run(async()=>{await api('POST',{action:'settle',date:d});if(window.kasinoMsg)kasinoMsg('tide')})};
