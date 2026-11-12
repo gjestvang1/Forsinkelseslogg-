@@ -92,6 +92,10 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
 .foldBody .note{margin-top:0;font-size:.85rem}
 .me{margin-top:8px}
 .stat{color:var(--mute);font-size:.8rem;margin:18px 0 0}
+.pushHead{display:flex;align-items:center;gap:10px}
+.pushHead .ghost{margin-left:auto;padding:8px 14px;min-height:40px}
+.pill{font-size:.8rem;font-weight:600;border-radius:999px;padding:2px 10px;background:var(--line);color:var(--mute)}
+.pill.on{background:color-mix(in srgb,var(--good) 18%,var(--surface));color:var(--good)}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -103,6 +107,7 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
  <section>
   <div class="players" id="players"></div>
   <div class="me"><span id="meTxt"></span></div>
+  <div class="push"><div class="pushHead"><b>Varsler</b><span class="pill" id="pushState">…</span><button class="ghost" id="pushBtn" type="button">…</button></div><p id="pushTxt">Sjekker om varsler er mulig …</p></div>
  </section>
 
  <h2>Velg dag</h2>
@@ -149,9 +154,8 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
   <button class="link" id="reset" type="button" hidden>Nullstill alle bets denne måneden</button>
  </div></details>
 
- <details class="fold" id="fSet"><summary>Profil og varsler</summary><div class="foldBody">
+ <details class="fold" id="fSet"><summary>Profil</summary><div class="foldBody">
   <div class="me"><button class="link" id="setDef" type="button">Bruk som standard på denne enheten</button><button class="link" id="rename" type="button">Endre navn</button></div>
-  <div class="push"><b>Varsler</b><p id="pushTxt">Sjekker om varsler er mulig …</p><button class="ghost" id="pushBtn" type="button" hidden></button></div>
  </div></details>
 
  <details class="fold" id="fRules"><summary>Slik fungerer det</summary><div class="foldBody"><div class="note">
@@ -234,42 +238,46 @@ $('setDef').onclick=()=>{def=me;ls.set(PKEY,me);render();if(pushOn)savePush()};
 
 // Push notifications: on iPhone they only work from the Home Screen app (iOS 16.4+).
 let pushOn=false;
+const TW=(()=>{try{return window.parent&&window.parent.navigator?window.parent:window}catch(e){return window}})();
+const NAV=TW.navigator,NOTI=TW.Notification;
 const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const standalone=TW.matchMedia('(display-mode: standalone)').matches||NAV.standalone===true;
 const b64=k=>{const p='='.repeat((4-k.length%4)%4),r=atob((k+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0))};
 // Never wait forever on the service worker: register it ourselves and give up after a few seconds.
 const timeout=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tidsavbrudd')),ms))]);
-async function swReg(){await navigator.serviceWorker.register('/sw.js');return timeout(navigator.serviceWorker.ready,8000)}
-async function sub(){const reg=await navigator.serviceWorker.getRegistration();return reg?reg.pushManager.getSubscription():null}
+async function swReg(){await NAV.serviceWorker.register('/sw.js');return timeout(NAV.serviceWorker.ready,8000)}
+async function sub(){const reg=await NAV.serviceWorker.getRegistration();return reg?reg.pushManager.getSubscription():null}
 async function savePush(off){
  const s=await sub();if(!s)return;
  await fetch(API+'?push',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sub:s.toJSON(),profile:def||me,off:!!off})});
  if(off)await s.unsubscribe();
 }
 async function pushUI(){
- const t=$('pushTxt'),b=$('pushBtn');
- if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
-  t.textContent=ios&&!standalone?'På iPhone virker varsler bare fra appen på Hjem-skjermen. Trykk Del → «Legg til på Hjem-skjerm» her i Safari, og åpne appen derfra. Ligger appen allerede på Hjem-skjermen fra før, slett den og legg den til på nytt.':ios?'Varsler krever iOS 16.4 eller nyere. Oppdater iPhonen under Innstillinger → Generelt → Programvareoppdatering.':'Varsler støttes ikke i denne nettleseren.';
-  b.hidden=true;return;
+ const t=$('pushTxt'),b=$('pushBtn'),st=$('pushState');
+ const show=(on,txt,btn)=>{st.textContent=on?'På':'Av';st.className=on?'pill on':'pill';t.textContent=txt;b.textContent=btn||(on?'Slå av':'Slå på');b.disabled=!btn&&btn!==undefined;};
+ if(!('serviceWorker' in NAV)||!('PushManager' in TW)||!NOTI){
+  pushOn=false;
+  show(false,ios&&!standalone?'På iPhone virker varsler bare fra appen på Hjem-skjermen. Trykk Del → «Legg til på Hjem-skjerm» i Safari, og åpne appen derfra.':ios?'Varsler krever iOS 16.4 eller nyere.':'Varsler støttes ikke i denne nettleseren.','');
+  b.textContent='Slå på';b.disabled=true;return;
  }
- pushOn=!!(await sub().catch(()=>null))&&Notification.permission==='granted';
- if(Notification.permission==='denied'){t.textContent='Varsler er blokkert. Slå dem på i innstillingene for appen.';b.hidden=true;return}
- t.textContent=pushOn?'Varsler er på for nye bets og resultater.':'Få varsel når noen better og når resultatet er klart.';
- b.textContent=pushOn?'Slå av':'Slå på varsler';b.hidden=false;
+ pushOn=!!(await sub().catch(()=>null))&&NOTI.permission==='granted';
+ if(NOTI.permission==='denied'){show(false,'Varsler er blokkert. Slå dem på under Innstillinger → Varslinger → Forsinkelser.','');b.textContent='Slå på';b.disabled=true;return}
+ show(pushOn,pushOn?'Du får varsel når noen better og når resultatet er klart.':'Slå på for å få varsel når noen better og når resultatet er klart.');
+ b.disabled=false;
 }
 $('pushBtn').onclick=async()=>{
  const b=$('pushBtn');b.disabled=true;
  try{
   if(pushOn)await savePush(true);
   else{
-   if(await Notification.requestPermission()!=='granted')throw new Error('Du må tillate varsler for å få dem.');
+   if(await NOTI.requestPermission()!=='granted')throw new Error('Du må tillate varsler for å få dem.');
    if(!data.vapidKey)throw new Error('Får ikke kontakt med serveren. Prøv igjen.');
    const reg=await swReg();
    await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(data.vapidKey)});
    await savePush();
   }
  }catch(x){alert('Kunne ikke slå på varsler: '+(x.message||x))}
- b.disabled=false;pushUI();
+ pushUI();
 };
 $('rename').onclick=()=>{const n=prompt('Nytt navn for '+name(me)+':',name(me));if(n&&n.trim())run(()=>api('POST',{action:'rename',profile:me,name:n.trim()}))};
 $('onTime').onclick=()=>{const d=$('date').value;if(confirm('Avgjøre '+dayName(d)+' som «i tide»?'))run(()=>api('POST',{action:'settle',date:d}))};
