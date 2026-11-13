@@ -145,7 +145,7 @@
     },
     jackpot(won) {
       const banner = document.createElement("div");
-      banner.className = "fxjack"; banner.textContent = (jul ? "🎁 " : "🎰 ") + "+" + won + " cr";
+      banner.className = "fxjack"; banner.textContent = (jul ? "🎁 " : "🎰 ") + "+" + won + (jul ? " pepperkaker" : " cr");
       document.body.appendChild(banner);
       banner.animate([{ transform: "translate(-50%,-50%) scale(.3)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.1)", opacity: 1, offset: 0.25 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: 0.8 }, { transform: "translate(-50%,-60%) scale(1)", opacity: 0 }], { duration: 2400, easing: "ease-out" }).onfinish = () => banner.remove();
       for (let i = 0; i < 36; i++) {

@@ -93,7 +93,7 @@ export default async (req) => {
       const old = bets.find((x) => x.id === key);
       const balance = (months[monthOf(b.date)] || fresh())[b.profile];
       if (stake > balance + (old ? old.stake : 0))
-        return json({ error: `Ikke nok credits (du har ${Math.floor(balance + (old ? old.stake : 0))})` }, 400);
+        return json({ error: `Ikke nok ${todayOslo().slice(5, 7) === "12" ? "pepperkaker" : "credits"} (du har ${Math.floor(balance + (old ? old.stake : 0))})` }, 400);
       const rec = { id: key, date: b.date, profile: b.profile, type: b.type, stake, ts: Date.now() };
       if (b.type === "yn") {
         if (typeof b.late !== "boolean") return json({ error: "Velg ja eller nei" }, 400);

@@ -111,7 +111,7 @@ function notifyBet(s, rec, names, changed) {
   const what = rec.type === "yn" ? (rec.late ? "for sent" : "i tide") : "antall minutter";
   return push(s, {
     title: "Bet placed",
-    body: `${names[rec.profile]}${changed ? " endret bettet" : ""}: ${what} (${dayLabel(rec.date)}), ${rec.stake} credits`,
+    body: `${names[rec.profile]}${changed ? " endret bettet" : ""}: ${what} (${dayLabel(rec.date)}), ${rec.stake} ${todayOslo().slice(5, 7) === "12" ? "pepperkaker" : "credits"}`,
     tag: "bet",
   }, rec.profile);
 }

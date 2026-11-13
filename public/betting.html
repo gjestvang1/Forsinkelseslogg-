@@ -198,12 +198,16 @@ const API='/api/betting',PKEY='forsinkelseslogg:profil',CKEY='forsinkelseslogg:k
 const ls={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 let data={profiles:[],bets:[],results:{}},code=ls.get(CKEY),def=ls.get(PKEY),me=def||'p1',side=null,today='';
 const $=id=>document.getElementById(id);
+// December (or ?jul): credits are gingerbread biscuits, and the wallet shows heaps of them.
+const JUL=(()=>{let q=location.search+location.hash;try{q+=parent.location.search+parent.location.hash}catch(e){}return new Date().getMonth()===11||/jul/.test(q)})();
+const U=JUL?' pepperkaker':' cr',UL=JUL?'pepperkaker':'credits';
+if(JUL)document.querySelectorAll('.stakeLbl,#ynOwn,#minOwn,#fRules p').forEach(e=>e.childNodes.forEach(n=>{if(n.nodeType===3)n.textContent=n.textContent.replace(/\(credits\)|\(cr\)/,'(pepperkaker)').replace(/credits/g,'pepperkaker')}));
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const parse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const dayName=s=>s===today?'i dag':parse(s).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short'});
-const cr=n=>Math.round(n)+' cr';
+const cr=n=>Math.round(n)+U;
 const name=id=>(data.profiles.find(p=>p.id===id)||{name:id}).name;
-const signed=n=>{n=Math.round(n);const s=el('span',n>0?'pos':n<0?'neg':'zero',(n>0?'+':'')+n+' cr');return s};
+const signed=n=>{n=Math.round(n);const s=el('span',n>0?'pos':n<0?'neg':'zero',(n>0?'+':'')+n+U);return s};
 const resTxt=r=>r.min>0?r.min+' min for sent':'i tide';
 
 const price=t=>(data.stakes||{yn:5,min:10})[t];
@@ -335,7 +339,7 @@ document.querySelectorAll('details.fold').forEach(d=>{const k='forsinkelseslogg:
 const withdraw=id=>run(()=>api('DELETE',null,'?id='+encodeURIComponent(id)));
 // Admin (the profile the server names, Andreas) gets a delete button on every bet.
 const isAdmin=()=>me===(data.admin||'p1');
-const delBtn=b=>{const x=el('button','del','Slett bet (admin)');x.type='button';x.onclick=()=>{if(confirm('Slette '+name(b.profile)+' sitt bet for '+dayName(b.date)+' ('+betTxt(b)+', '+b.stake+' cr)? Saldoene regnes ut på nytt.'))run(()=>api('DELETE',null,'?id='+encodeURIComponent(b.id)+'&admin='+me))};return x};
+const delBtn=b=>{const x=el('button','del','Slett bet (admin)');x.type='button';x.onclick=()=>{if(confirm('Slette '+name(b.profile)+' sitt bet for '+dayName(b.date)+' ('+betTxt(b)+', '+b.stake+U+')? Saldoene regnes ut på nytt.'))run(()=>api('DELETE',null,'?id='+encodeURIComponent(b.id)+'&admin='+me))};return x};
 
 $('whoSel').onchange=e=>{me=e.target.value;render()};
 let tab=ls.get('forsinkelseslogg:fane')||'yn';
@@ -348,8 +352,14 @@ function render(){
  data.profiles.forEach(p=>{
   const b=el('div','player');b.setAttribute('aria-pressed',p.id===me);
   // a5: a small tower of chips that follows the balance (one chip per 20 cr, max 8).
-  const tw=el('span','tower');const nC=Math.max(0,Math.min(8,Math.round(p.balance/20)));for(let i=0;i<nC;i++)tw.appendChild(el('i'));
-  b.append(el('span',null,(p.id===def?'★ ':'')+p.name),tw,el('b',null,Math.round(p.balance)),el('small',null,'credits'));
+  let tw;
+  if(JUL){// One biscuit per 10, heaps of up to 10 stacked as a pyramid (4-3-2-1), at most 3 heaps.
+   tw=el('span','heaps');let left=Math.max(0,Math.min(30,Math.round(p.balance/10)));
+   while(left>0){const n=Math.min(10,left);left-=n;const h=el('span','heap');let k=n;
+    let base=1;while(base*(base+1)/2<n)base++;for(let w=base;w>=1;w--){if(k<=0)break;const r=el('span','hrow');for(let j=0;j<Math.min(w,k);j++)r.appendChild(el('i'));k-=w;h.appendChild(r)}
+    tw.appendChild(h)}
+  }else{tw=el('span','tower');const nC=Math.max(0,Math.min(8,Math.round(p.balance/20)));for(let i=0;i<nC;i++)tw.appendChild(el('i'))}
+  b.append(el('span',null,(p.id===def?'★ ':'')+p.name),tw,el('b',null,Math.round(p.balance)),el('small',null,UL));
   P.appendChild(b);
  });
  $('meTxt').textContent=data.month?'Saldo for '+monthName(data.month,false)+'.':'';
@@ -380,9 +390,9 @@ function render(){
  $('minPool').textContent=mn.length?'Pott: '+cr(sum(mn))+' fra '+mn.map(b=>name(b.profile)).join(', ')+'.'+alone(mn):'Ingen bets ennå.';
  const mine=(box,b,txt)=>{const m=$(box);m.hidden=!b;m.replaceChildren();if(!b)return;const w=el('button',null,'Trekk');w.type='button';w.onclick=()=>withdraw(b.id);m.append(el('span',null,txt),w)};
  $('tabYn').classList.toggle('has',!!myYn);$('tabMin').classList.toggle('has',!!myMin);
- mine('ynMine',myYn,myYn&&'Ditt bet: '+(myYn.late?'Ja':'Nei')+', '+myYn.stake+' cr. Velg på nytt for å endre.');
- mine('minMine',myMin,myMin&&'Ditt bet: '+(myMin.guess??(ls.get('forsinkelseslogg:gjett:'+d+':'+me)||'?'))+' min, '+myMin.stake+' cr. Skriv nytt gjett for å endre.');
- $('ynGo').textContent=(myYn?'Endre bet':'Sett bet')+' · '+stakeOf('yn')+' cr';$('minGo').textContent=(myMin?'Endre bet':'Sett bet')+' · '+stakeOf('min')+' cr';
+ mine('ynMine',myYn,myYn&&'Ditt bet: '+(myYn.late?'Ja':'Nei')+', '+myYn.stake+U+'. Velg på nytt for å endre.');
+ mine('minMine',myMin,myMin&&'Ditt bet: '+(myMin.guess??(ls.get('forsinkelseslogg:gjett:'+d+':'+me)||'?'))+' min, '+myMin.stake+U+'. Skriv nytt gjett for å endre.');
+ $('ynGo').textContent=(myYn?'Endre bet':'Sett bet')+' · '+stakeOf('yn')+U;$('minGo').textContent=(myMin?'Endre bet':'Sett bet')+' · '+stakeOf('min')+U;
  const myBal=Math.floor((data.profiles.find(p=>p.id===me)||{}).balance??0);
  chipUI('yn',myBal+(myYn?myYn.stake:0));chipUI('min',myBal+(myMin?myMin.stake:0));
 
@@ -398,7 +408,7 @@ function render(){
  if(!open.length)O.appendChild(el('p','empty','Ingen åpne bets.'));
  open.forEach(b=>{
   const r=el('div',seen.has(b.id)?'line new':'line'),a=el('div',null,name(b.profile)+': '+betTxt(b));
-  a.appendChild(el('small',null,'Gjelder '+dayName(b.date)+' · lagt inn '+when(b.ts)));r.append(a,el('b',null,b.stake+' cr'));if(isAdmin())r.appendChild(delBtn(b));O.appendChild(r);
+  a.appendChild(el('small',null,'Gjelder '+dayName(b.date)+' · lagt inn '+when(b.ts)));r.append(a,el('b',null,b.stake+U));if(isAdmin())r.appendChild(delBtn(b));O.appendChild(r);
  });
 
  // Month picker: every month that has a balance, newest first.
@@ -411,7 +421,7 @@ function render(){
  // Leader change: slide rows from their old place.
  const order=ranked.map(x=>x.p.id),moved=prevOrder&&prevOrder.join()!==order.join()&&prevMonth===selMonth;
  ranked.forEach((x,i)=>{const r=el('div','rank');
-  if(moved&&window.fx){const was=prevOrder.indexOf(x.p.id);if(was>=0&&was!==i)fx.slide(r,(was-i));if(i===0&&was!==0)r.classList.add('fxnewlead')}r.append(el('i',null,(i+1)+'.'),el('span',null,x.p.name+(i===0&&!cur&&x.v>ranked[1].v?' 🏆':'')),el('b',null,Math.round(x.v)+' cr'));S.appendChild(r)});
+  if(moved&&window.fx){const was=prevOrder.indexOf(x.p.id);if(was>=0&&was!==i)fx.slide(r,(was-i));if(i===0&&was!==0)r.classList.add('fxnewlead')}r.append(el('i',null,(i+1)+'.'),el('span',null,x.p.name+(i===0&&!cur&&x.v>ranked[1].v?' 🏆':'')),el('b',null,Math.round(x.v)+U));S.appendChild(r)});
  prevOrder=order;prevMonth=selMonth;
  const lead=ranked[0];$('resSum').textContent=lead?(cur?'Leder: ':'Vinner: ')+lead.p.name:'';
  const rs=(data.resets||{})[selMonth];
@@ -436,14 +446,14 @@ function jackpot(){
 }
 const monthName=(m,cap)=>{const[y,mo]=m.split('-').map(Number),t=new Date(y,mo-1,1).toLocaleDateString('nb-NO',{month:'long',year:y===new Date().getFullYear()?undefined:'numeric'});return cap?t[0].toUpperCase()+t.slice(1):t};
 $('month').addEventListener('change',e=>{selMonth=e.target.value;render()});
-$('reset').onclick=()=>{if(confirm('Nullstille alle bets i '+monthName(data.month,false)+'? Alle får 100 credits igjen, og bets lagt inn hittil denne måneden teller ikke lenger.'))run(()=>api('POST',{action:'reset'}))};
+$('reset').onclick=()=>{if(confirm('Nullstille alle bets i '+monthName(data.month,false)+'? Alle får 100 '+UL+' igjen, og bets lagt inn hittil denne måneden teller ikke lenger.'))run(()=>api('POST',{action:'reset'}))};
 const when=t=>{const d=new Date(t),tm=d.toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'});return(d.toDateString()===new Date().toDateString()?'i dag':d.toLocaleDateString('nb-NO',{day:'numeric',month:'short'}))+' kl. '+tm};
 const betTxt=b=>b.type==='yn'?(b.late?'for sent':'i tide'):(b.guess==null?'minutter (skjult)':'gjettet '+b.guess+' min');
 function dayBlock(d,res,bets){
  const w=el('div','day'),h=el('h3',null,dayName(d));h.appendChild(el('span',null,resTxt(res)));w.appendChild(h);
  bets.sort((a,b)=>a.type<b.type?1:-1).forEach(b=>{
   const r=el('div','line'),a=el('div',null,name(b.profile)+': '+betTxt(b));
-  a.appendChild(el('small',null,(b.type==='yn'?'Ja/nei':'Minutter')+' · innsats '+b.stake+' cr'));
+  a.appendChild(el('small',null,(b.type==='yn'?'Ja/nei':'Minutter')+' · innsats '+b.stake+U));
   r.append(a,b.payout===b.stake?el('span','zero','Tilbake'):signed(b.payout-b.stake));if(isAdmin())r.appendChild(delBtn(b));w.appendChild(r);
  });
  return w;
