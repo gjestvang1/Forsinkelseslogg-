@@ -82,6 +82,15 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .note{color:var(--mute);font-size:.8rem;margin-top:32px}
 .dup{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border-left:3px solid var(--accent);padding:8px 10px;margin:0;font-size:.9rem;border-radius:4px}
 [hidden]{display:none!important}
+details.fold{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin:22px 0 8px}
+details.fold>summary{list-style:none;cursor:pointer;padding:14px 16px;font-weight:600;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;gap:8px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(45deg);margin-right:4px;transition:transform .15s}
+details.fold[open]>summary::after{transform:rotate(-135deg)}
+details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto;font-size:.85rem}
+.foldBody{padding:0 16px 16px}
+.foldBody h3{font-size:1rem;margin:20px 0 10px}
+.foldBody .stats{margin-top:4px}
 </style>
 <link rel="stylesheet" href="/theme.css">
 </head>
@@ -94,11 +103,6 @@ button{font:inherit;cursor:pointer;border-radius:6px}
  <section class="hero">
   <small>Forsinket denne uken</small>
   <div class="big" id="wk">0 min</div>
- </section>
- <section class="stats">
-  <div><b id="m30">0 min</b><span>Siste 30 dager</span></div>
-  <div><b id="y1">0 min</b><span>Siste år</span></div>
-  <div><b id="avg">0 min</b><span>Snitt per uke</span></div>
  </section>
 
  <h2>Ny forsinkelse</h2>
@@ -114,16 +118,24 @@ button{font:inherit;cursor:pointer;border-radius:6px}
   <button class="go" id="save">Legg til</button>
  </div>
 
- <h2>Siste 12 uker</h2>
- <div class="chart" id="chart"></div>
- <div class="wlab" id="wlab"></div>
- <p class="cnote" id="chartNote"></p>
+ <details class="fold" id="fStat"><summary>Statistikk <small id="statSum"></small></summary><div class="foldBody">
+ <section class="stats">
+   <div><b id="m30">0 min</b><span>Siste 30 dager</span></div>
+   <div><b id="y1">0 min</b><span>Siste år</span></div>
+   <div><b id="avg">0 min</b><span>Snitt per uke</span></div>
+  </section>
 
- <h2>Rekorder</h2>
- <div class="rec">
-  <div><span>Verste dag</span><b id="rDay">–</b><small id="rDayS"></small></div>
-  <div><span>Verste uke</span><b id="rWk">–</b><small id="rWkS"></small></div>
- </div>
+  <h3>Rekorder</h3>
+  <div class="rec">
+   <div><span>Verste dag</span><b id="rDay">–</b><small id="rDayS"></small></div>
+   <div><span>Verste uke</span><b id="rWk">–</b><small id="rWkS"></small></div>
+  </div>
+
+  <h3>Siste 12 uker</h3>
+  <div class="chart" id="chart"></div>
+  <div class="wlab" id="wlab"></div>
+  <p class="cnote" id="chartNote"></p>
+ </div></details>
 
  <h2>Uke for uke</h2>
  <div id="weeks"></div>
@@ -134,6 +146,7 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 
  <p class="note"><span id="stat">Kobler til …</span> Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med.</p>
 </main>
+<script>{const d=document.getElementById('fStat'),k='forsinkelseslogg:fold:fStat';try{if(localStorage.getItem(k)==='1')d.open=true}catch(e){}d.addEventListener('toggle',()=>{try{localStorage.setItem(k,d.open?'1':'0')}catch(e){}})}</script>
 
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
@@ -227,7 +240,7 @@ function render(){
  $('wk').textContent=fmt(sum(entries.filter(e=>monday(parse(e.date)).getTime()===wk.getTime())));
  const d30=new Date(today);d30.setDate(d30.getDate()-30);
  const d365=new Date(today);d365.setFullYear(d365.getFullYear()-1);
- $('m30').textContent=fmt(sum(entries.filter(e=>tm(e.date)>=d30.getTime()&&tm(e.date)<=today.getTime())));
+ $('m30').textContent=fmt(sum(entries.filter(e=>tm(e.date)>=d30.getTime()&&tm(e.date)<=today.getTime())));$('statSum').textContent='Siste 30 dager: '+$('m30').textContent;
  $('y1').textContent=fmt(sum(entries.filter(e=>tm(e.date)>=d365.getTime()&&tm(e.date)<=today.getTime())));
 
  const W=$('weeks'),L=$('log');W.replaceChildren();L.replaceChildren();

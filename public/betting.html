@@ -97,18 +97,35 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
 .pill{font-size:.8rem;font-weight:600;border-radius:999px;padding:2px 10px;background:var(--line);color:var(--mute)}
 .pill.on{background:color-mix(in srgb,var(--good) 18%,var(--surface));color:var(--good)}
 [hidden]{display:none!important}
+main{position:relative}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.who{position:absolute;top:22px;right:16px;display:flex;align-items:center;gap:4px;font-size:.85rem;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:var(--surface);color:var(--ink);cursor:pointer}
+.who::after{content:"▾";font-size:.75rem;opacity:.8}
+.who select{position:absolute;inset:0;opacity:0;width:100%;font-size:16px;cursor:pointer}
+.players .player{cursor:default}
+.pushHint{display:block;margin:10px 0 0;background:none;border:1px dashed var(--line);border-radius:10px;color:var(--mute);font:inherit;font-size:.88rem;padding:8px 12px;width:100%;text-align:left;cursor:pointer}
+.betCard h3{margin-bottom:10px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:999px;background:rgba(0,0,0,.22);margin-bottom:14px}
+.tabs button{font:inherit;font-weight:600;font-size:.92rem;border:0;border-radius:999px;padding:9px 6px;background:none;color:var(--mute);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--accent);color:var(--felt-lo,#0B2F25)}
+.tabs button.has::after{content:" ✓"}
+.q{font-weight:600;margin:0}
+.betCard [role=tabpanel]{display:grid;gap:12px}
+.betCard .tabs{margin-bottom:2px}
+.betCard h3{margin:0}
 </style>
 <link rel="stylesheet" href="/theme.css">
 </head>
 <body>
 <main>
  <nav><a href="/#logg" data-page="0">Logg</a><a href="/#betting" data-page="1" aria-current="page">Betting</a></nav>
+ <label class="who" title="Bytt spiller"><span class="sr">Du spiller som</span><span id="whoName">…</span><select id="whoSel" aria-label="Bytt spiller"></select></label>
  <h1>Betting</h1>
 
  <section>
   <div class="players" id="players"></div>
   <div class="me"><span id="meTxt"></span></div>
-  <div class="push"><div class="pushHead"><b>Varsler</b><span class="pill" id="pushState">…</span><button class="ghost" id="pushBtn" type="button">…</button></div><p id="pushTxt">Sjekker om varsler er mulig …</p></div>
+  <button class="pushHint" id="pushHint" type="button" hidden>🔕 Varsler er av · <u>Slå på</u></button>
  </section>
 
  <h2>Velg dag</h2>
@@ -120,8 +137,11 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
  </div>
 
  <div id="betting">
-  <div class="card">
-   <h3>Kommer hun for sent?</h3>
+  <div class="card betCard">
+   <h3>Dagens bet</h3>
+   <div class="tabs" role="tablist"><button type="button" role="tab" id="tabYn" data-tab="yn">Ja/nei</button><button type="button" role="tab" id="tabMin" data-tab="min">Minutter</button></div>
+   <div id="pnYn" role="tabpanel">
+   <p class="q">Kommer hun for sent?</p>
    <div class="seg"><button type="button" id="ja" aria-pressed="false">Ja</button><button type="button" id="nei" aria-pressed="false">Nei</button></div>
    <p class="pool" id="ynPool"></p>
    <p class="mine" id="ynMine" hidden></p>
@@ -130,10 +150,9 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
    <div class="chips" id="ynChips"></div>
    <label id="ynOwn" hidden>Eget beløp (cr)<input type="number" id="ynStake" min="1" step="1" inputmode="numeric" placeholder="f.eks. 35"></label>
    <button class="go" id="ynGo" type="button">Sett bet</button>
-  </div>
-
-  <div class="card">
-   <h3>Hvor mange minutter for sent?</h3>
+   </div>
+   <div id="pnMin" role="tabpanel">
+   <p class="q">Hvor mange minutter for sent?</p>
    <p class="pool" id="minPool"></p>
    <p class="mine" id="minMine" hidden></p>
    <label>Ditt gjett (min)<input type="number" id="guess" min="0" max="600" inputmode="numeric" placeholder="0 = i tide"></label>
@@ -142,6 +161,7 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
    <label id="minOwn" hidden>Eget beløp (cr)<input type="number" id="minStake" min="1" step="1" inputmode="numeric" placeholder="f.eks. 35"></label>
    <p class="err" id="minErr" role="alert"></p>
    <button class="go" id="minGo" type="button">Sett bet</button>
+   </div>
   </div>
  </div>
  <div id="result"></div>
@@ -155,7 +175,8 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto}
   <button class="link" id="reset" type="button" hidden>Nullstill alle bets denne måneden</button>
  </div></details>
 
- <details class="fold" id="fSet"><summary>Profil</summary><div class="foldBody">
+ <details class="fold" id="fSet"><summary>Profil og varsler <small id="setSum"></small></summary><div class="foldBody">
+  <div class="push"><div class="pushHead"><b>Varsler</b><span class="pill" id="pushState">…</span><button class="ghost" id="pushBtn" type="button">…</button></div><p id="pushTxt">Sjekker om varsler er mulig …</p></div>
   <div class="me"><button class="link" id="setDef" type="button">Bruk som standard på denne enheten</button><button class="link" id="rename" type="button">Endre navn</button></div>
  </div></details>
 
@@ -256,7 +277,7 @@ async function savePush(off){
 }
 async function pushUI(){
  const t=$('pushTxt'),b=$('pushBtn'),st=$('pushState');
- const show=(on,txt,btn)=>{st.textContent=on?'På':'Av';st.className=on?'pill on':'pill';t.textContent=txt;b.textContent=btn||(on?'Slå av':'Slå på');b.disabled=!btn&&btn!==undefined;};
+ const show=(on,txt,btn)=>{$('pushHint').hidden=!!on||btn===null;st.textContent=on?'På':'Av';st.className=on?'pill on':'pill';t.textContent=txt;b.textContent=btn||(on?'Slå av':'Slå på');b.disabled=!btn&&btn!==undefined;};
  if(!('serviceWorker' in NAV)||!('PushManager' in TW)||!NOTI){
   pushOn=false;
   show(false,ios&&!standalone?'På iPhone virker varsler bare fra appen på Hjem-skjermen. Trykk Del → «Legg til på Hjem-skjerm» i Safari, og åpne appen derfra.':ios?'Varsler krever iOS 16.4 eller nyere.':'Varsler støttes ikke i denne nettleseren.','');
@@ -316,16 +337,26 @@ const withdraw=id=>run(()=>api('DELETE',null,'?id='+encodeURIComponent(id)));
 const isAdmin=()=>me===(data.admin||'p1');
 const delBtn=b=>{const x=el('button','del','Slett bet (admin)');x.type='button';x.onclick=()=>{if(confirm('Slette '+name(b.profile)+' sitt bet for '+dayName(b.date)+' ('+betTxt(b)+', '+b.stake+' cr)? Saldoene regnes ut på nytt.'))run(()=>api('DELETE',null,'?id='+encodeURIComponent(b.id)+'&admin='+me))};return x};
 
+$('whoSel').onchange=e=>{me=e.target.value;render()};
+let tab=ls.get('forsinkelseslogg:fane')||'yn';
+const showTab=()=>{['yn','min'].forEach(t=>{const on=t===tab,b=$(t==='yn'?'tabYn':'tabMin');b.setAttribute('aria-selected',on);$(t==='yn'?'pnYn':'pnMin').hidden=!on})};
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;ls.set('forsinkelseslogg:fane',tab);showTab()});
+showTab();
+$('pushHint').onclick=()=>{const f=$('fSet');f.open=true;f.scrollIntoView({behavior:'smooth',block:'start'})};
 function render(){
  const P=$('players');P.replaceChildren();
  data.profiles.forEach(p=>{
-  const b=el('button','player');b.type='button';b.setAttribute('aria-pressed',p.id===me);
+  const b=el('div','player');b.setAttribute('aria-pressed',p.id===me);
   // a5: a small tower of chips that follows the balance (one chip per 20 cr, max 8).
   const tw=el('span','tower');const nC=Math.max(0,Math.min(8,Math.round(p.balance/20)));for(let i=0;i<nC;i++)tw.appendChild(el('i'));
   b.append(el('span',null,(p.id===def?'★ ':'')+p.name),tw,el('b',null,Math.round(p.balance)),el('small',null,'credits'));
-  b.onclick=()=>{me=p.id;render()};P.appendChild(b);
+  P.appendChild(b);
  });
- $('meTxt').textContent=(data.month?'Saldo for '+monthName(data.month,false)+'. ':'')+'Du spiller som '+name(me)+(me===def?' (standard på denne enheten).':'.');
+ $('meTxt').textContent=data.month?'Saldo for '+monthName(data.month,false)+'.':'';
+ // Name badge in the corner switches player.
+ $('whoName').textContent=name(me);const W=$('whoSel');
+ W.replaceChildren(...data.profiles.map(p=>{const o=el('option',null,p.name+(p.id===def?' (standard)':''));o.value=p.id;o.selected=p.id===me;return o}));
+ $('setSum').textContent=name(me)+(def&&me!==def?' · ikke standard':'');
  $('setDef').hidden=me===def;
 
  const d=$('date').value,res=data.results[d],bets=data.bets.filter(b=>b.date===d);
@@ -348,6 +379,7 @@ function render(){
  $('ynPool').textContent=yn.length?'Ja: '+cr(sum(ja))+' ('+who(ja)+') · Nei: '+cr(sum(nei))+' ('+who(nei)+').'+(ja.length&&nei.length?'':alone(yn)||' Alle har valgt det samme så langt.'):'Ingen bets ennå.';
  $('minPool').textContent=mn.length?'Pott: '+cr(sum(mn))+' fra '+mn.map(b=>name(b.profile)).join(', ')+'.'+alone(mn):'Ingen bets ennå.';
  const mine=(box,b,txt)=>{const m=$(box);m.hidden=!b;m.replaceChildren();if(!b)return;const w=el('button',null,'Trekk');w.type='button';w.onclick=()=>withdraw(b.id);m.append(el('span',null,txt),w)};
+ $('tabYn').classList.toggle('has',!!myYn);$('tabMin').classList.toggle('has',!!myMin);
  mine('ynMine',myYn,myYn&&'Ditt bet: '+(myYn.late?'Ja':'Nei')+', '+myYn.stake+' cr. Velg på nytt for å endre.');
  mine('minMine',myMin,myMin&&'Ditt bet: '+(myMin.guess??(ls.get('forsinkelseslogg:gjett:'+d+':'+me)||'?'))+' min, '+myMin.stake+' cr. Skriv nytt gjett for å endre.');
  $('ynGo').textContent=(myYn?'Endre bet':'Sett bet')+' · '+stakeOf('yn')+' cr';$('minGo').textContent=(myMin?'Endre bet':'Sett bet')+' · '+stakeOf('min')+' cr';
