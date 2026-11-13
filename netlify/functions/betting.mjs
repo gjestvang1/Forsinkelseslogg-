@@ -17,6 +17,8 @@ const authorized = (req) => {
   return (req.headers.get("x-skrivekode") || "").trim() === code;
 };
 
+const ADMIN = "p1";
+
 export default async (req) => {
   const s = store();
 
@@ -26,7 +28,7 @@ export default async (req) => {
     const shown = bets.map((b) => (res[b.date] || b.type !== "min" ? b : { ...b, guess: null }));
     const profiles = PROFILES.map((id) => ({ id, name: names[id], balance: balances[id] }));
     const vapidKey = (await vapid(s)).publicKey;
-    return json({ profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode() });
+    return json({ profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN });
   }
 
   // Turning notifications on or off only touches this device, so it needs no write code.
@@ -113,8 +115,11 @@ export default async (req) => {
     const id = new URL(req.url).searchParams.get("id") || "";
     const m = id.match(/^bet\/(\d{4}-\d{2}-\d{2})\/(p[123])\/(yn|min)$/);
     if (!m) return json({ error: "Mangler id" }, 400);
+    // The admin (profile p1, Andreas) may delete any bet, also on a settled day,
+    // e.g. one placed on the wrong date. Balances are recomputed from the bets.
+    const admin = new URL(req.url).searchParams.get("admin") === ADMIN;
     const { res } = await state();
-    if (res[m[1]]) return json({ error: "Dagen er allerede avgjort" }, 409);
+    if (res[m[1]] && !admin) return json({ error: "Dagen er allerede avgjort" }, 409);
     await s.delete(id);
     return json({ ok: true });
   }

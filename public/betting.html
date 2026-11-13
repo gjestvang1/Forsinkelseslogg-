@@ -55,6 +55,7 @@ button:disabled{opacity:.5;cursor:default}
 .err{color:var(--accent);font-size:.9rem;min-height:1.2em;margin:0}
 .line{display:grid;grid-template-columns:1fr auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.95rem}
 .line small{display:block;color:var(--mute)}
+.line .del{grid-column:1/-1;justify-self:start;background:none;border:1px dashed var(--accent);color:var(--accent);border-radius:999px;padding:3px 10px;font:inherit;font-size:.8rem;font-weight:600;cursor:pointer}
 .pos{color:var(--good);font-weight:600}
 .neg{color:var(--accent);font-weight:600}
 .zero{color:var(--mute);font-weight:600}
@@ -311,6 +312,9 @@ $('minGo').onclick=()=>{
 // Remember which sections are open on this device.
 document.querySelectorAll('details.fold').forEach(d=>{const k='forsinkelseslogg:fold:'+d.id;if(ls.get(k)==='1')d.open=true;d.addEventListener('toggle',()=>ls.set(k,d.open?'1':'0'))});
 const withdraw=id=>run(()=>api('DELETE',null,'?id='+encodeURIComponent(id)));
+// Admin (the profile the server names, Andreas) gets a delete button on every bet.
+const isAdmin=()=>me===(data.admin||'p1');
+const delBtn=b=>{const x=el('button','del','Slett bet (admin)');x.type='button';x.onclick=()=>{if(confirm('Slette '+name(b.profile)+' sitt bet for '+dayName(b.date)+' ('+betTxt(b)+', '+b.stake+' cr)? Saldoene regnes ut på nytt.'))run(()=>api('DELETE',null,'?id='+encodeURIComponent(b.id)+'&admin='+me))};return x};
 
 function render(){
  const P=$('players');P.replaceChildren();
@@ -362,7 +366,7 @@ function render(){
  if(!open.length)O.appendChild(el('p','empty','Ingen åpne bets.'));
  open.forEach(b=>{
   const r=el('div',seen.has(b.id)?'line new':'line'),a=el('div',null,name(b.profile)+': '+betTxt(b));
-  a.appendChild(el('small',null,'Gjelder '+dayName(b.date)+' · lagt inn '+when(b.ts)));r.append(a,el('b',null,b.stake+' cr'));O.appendChild(r);
+  a.appendChild(el('small',null,'Gjelder '+dayName(b.date)+' · lagt inn '+when(b.ts)));r.append(a,el('b',null,b.stake+' cr'));if(isAdmin())r.appendChild(delBtn(b));O.appendChild(r);
  });
 
  // Month picker: every month that has a balance, newest first.
@@ -408,7 +412,7 @@ function dayBlock(d,res,bets){
  bets.sort((a,b)=>a.type<b.type?1:-1).forEach(b=>{
   const r=el('div','line'),a=el('div',null,name(b.profile)+': '+betTxt(b));
   a.appendChild(el('small',null,(b.type==='yn'?'Ja/nei':'Minutter')+' · innsats '+b.stake+' cr'));
-  r.append(a,b.payout===b.stake?el('span','zero','Tilbake'):signed(b.payout-b.stake));w.appendChild(r);
+  r.append(a,b.payout===b.stake?el('span','zero','Tilbake'):signed(b.payout-b.stake));if(isAdmin())r.appendChild(delBtn(b));w.appendChild(r);
  });
  return w;
 }
