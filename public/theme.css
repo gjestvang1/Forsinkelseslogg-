@@ -128,6 +128,9 @@ details.fold>summary::after{border-color:var(--accent)}
 .fx.friday body::before{animation:friday 6s linear infinite}
 @keyframes friday{to{background-position:-300% 0,0 0}}
 
+/* Only vertical panning is left to the browser, so sideways swipes always reach swipe.js. */
+html,body{touch-action:pan-y}
+
 /* No text selection or iOS callout on app text; form fields stay editable. */
 html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}

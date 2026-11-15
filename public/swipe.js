@@ -18,28 +18,42 @@
     pager.go(1);
     try { const w = window.parent.document.getElementById("f1").contentWindow; w.openSettings && w.openSettings(); } catch (e) {}
   });
-  let x0 = 0, y0 = 0, dx = 0, mode = "", lastX = 0, lastT = 0, v = 0;
+  // Swipe detection. The pages only let the browser pan vertically (touch-action: pan-y in
+  // theme.css), so horizontal moves always reach us. A swipe is decided after a few pixels if the
+  // finger moves at least about as much sideways as up/down; the release speed is measured over
+  // the last ~100 ms so a short flick is enough.
+  // The page itself slides with the finger, so its own clientX would follow along and shrink the
+  // swipe. Measure in the shell's coordinates instead (page offset + clientX).
+  const fe = window.frameElement;
+  const X = (t) => t.clientX + (fe ? fe.getBoundingClientRect().left : 0);
+  let x0 = 0, y0 = 0, dx = 0, mode = "", samples = [];
   document.addEventListener("touchstart", (e) => {
     mode = "";
     if (e.touches.length !== 1) return;
     const t = e.touches[0];
-    x0 = lastX = t.clientX; y0 = t.clientY; lastT = e.timeStamp; dx = 0; v = 0; mode = "wait";
+    x0 = X(t); y0 = t.clientY; dx = 0; samples = [[x0, performance.now()]]; mode = "wait";
   }, { passive: true });
   document.addEventListener("touchmove", (e) => {
     if (!mode) return;
-    const t = e.touches[0], mx = t.clientX - x0, my = t.clientY - y0;
+    const t = e.touches[0], x = X(t), mx = x - x0, my = t.clientY - y0;
     if (mode === "wait") {
-      if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
-      if (Math.abs(mx) <= Math.abs(my)) { mode = ""; return; } // vertical: let the page scroll
-      mode = "swipe"; x0 = t.clientX; pager.start();
+      if (Math.abs(mx) < 6 && Math.abs(my) < 6) return;
+      if (Math.abs(mx) < Math.abs(my) * 0.85) { mode = ""; return; } // mostly vertical: let the page scroll
+      mode = "swipe"; pager.start(); // keep x0: the whole movement counts
     }
-    e.preventDefault();
-    dx = t.clientX - x0;
-    const dt = e.timeStamp - lastT;
-    if (dt > 0) { v = 0.8 * ((t.clientX - lastX) / dt) + 0.2 * v; lastX = t.clientX; lastT = e.timeStamp; }
+    if (e.cancelable) e.preventDefault();
+    dx = x - x0;
+    const now = performance.now(); samples.push([x, now]);
+    while (samples.length > 2 && now - samples[0][1] > 100) samples.shift();
     pager.move(dx);
   }, { passive: false });
-  const end = () => { if (mode === "swipe") pager.end(dx, v); mode = ""; };
+  const end = () => {
+    if (mode === "swipe") {
+      const a = samples[0], z = samples[samples.length - 1], dt = z[1] - a[1];
+      pager.end(dx, dt > 0 ? (z[0] - a[0]) / dt : 0);
+    }
+    mode = "";
+  };
   document.addEventListener("touchend", end);
   document.addEventListener("touchcancel", end);
 })();
