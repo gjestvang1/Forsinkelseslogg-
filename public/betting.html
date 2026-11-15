@@ -280,12 +280,11 @@ $('toast').onclick=()=>{$('toast').hidden=true};
 const run=async(fn,err)=>{if(err)$(err).textContent='';try{await fn();await load()}catch(x){if(err)$(err).textContent=x.message;else alert(x.message)}};
 
 $('date').addEventListener('change',()=>{side=null;render()});
-// Quick dates: today, tomorrow, and Monday when tomorrow is a weekend day.
+// Quick dates: today and tomorrow (shift work, so weekends count like any other day).
 const addDays=(d,n)=>{const[y,m,dd]=d.split('-').map(Number),x=new Date(Date.UTC(y,m-1,dd+n));return x.toISOString().slice(0,10)};
 function quickDates(){
  const box=$('quickd');if(!today)return;
- const tm=addDays(today,1),wd=new Date(tm+'T12:00:00Z').getUTCDay(),opts=[['I dag',today],['I morgen',tm]];
- if(wd===6||wd===0)opts.push(['Mandag',addDays(tm,wd===6?2:1)]);
+ const opts=[['I dag',today],['I morgen',addDays(today,1)]];
  const cur=$('date').value;box.replaceChildren();
  opts.forEach(([t,d])=>{const b=el('button',null,t);b.type='button';b.setAttribute('aria-pressed',cur===d);b.onclick=()=>{$('date').value=d;side=null;render()};box.appendChild(b)});
 }

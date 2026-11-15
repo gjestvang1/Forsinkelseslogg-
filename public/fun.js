@@ -128,10 +128,10 @@
   // e5: Friday afternoon shimmer.
   if (fridayAfternoon()) document.documentElement.classList.add("friday");
 
-  // e4: opening the app between 07:30 and 07:35 on a weekday (once a day; shown from the log page only).
+  // e4: opening the app between 07:30 and 07:35 (any day: shift work; once a day; log page only).
   if (onLog) {
     const n = new Date(), t = n.getHours() * 60 + n.getMinutes(), k = "forsinkelseslogg:0730";
-    if (n.getDay() >= 1 && n.getDay() <= 5 && t >= 450 && t < 455 && store.get(k) !== iso(n)) {
+    if (t >= 450 && t < 455 && store.get(k) !== iso(n)) {
       store.set(k, iso(n));
       setTimeout(() => window.fxCard && fxCard("⏰", "Klokka er halv åtte. Hun er ikke her. Selvfølgelig.", "Som forventet"), 1200);
     }
