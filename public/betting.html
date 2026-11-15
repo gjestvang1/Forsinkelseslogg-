@@ -69,6 +69,11 @@ button:disabled{opacity:.5;cursor:default}
 .line.new{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .push{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;display:grid;gap:8px;font-size:.9rem}
 .push p{margin:0;color:var(--mute)}
+.ptypes{display:grid;gap:6px}
+.ptype{display:flex;justify-content:space-between;align-items:center;width:100%;background:rgba(0,0,0,.15);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:.92rem;min-height:44px;text-align:left}
+.ptype::after{content:"Av";font-size:.75rem;font-weight:600;border-radius:999px;padding:2px 10px;background:rgba(0,0,0,.25);color:var(--mute)}
+.ptype[aria-pressed=true]{border-color:var(--accent)}
+.ptype[aria-pressed=true]::after{content:"På";background:rgba(123,224,166,.18);color:var(--good,#2F9E62)}
 select{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px;min-height:44px;width:100%}
 #standings{margin:14px 0 22px}
 .rank{display:grid;grid-template-columns:2rem 1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:1rem}
@@ -118,7 +123,7 @@ main{position:relative}
 </head>
 <body>
 <main>
- <nav><a href="/#logg" data-page="0">Logg</a><a href="/#betting" data-page="1" aria-current="page">Betting</a></nav>
+ <nav><a href="/#logg" data-page="0">Logg</a><a href="/#lunsj" data-page="1">Lunsj</a><a href="/#betting" data-page="2" aria-current="page">Betting</a></nav>
  <label class="who" title="Bytt spiller"><span class="sr">Du spiller som</span><span id="whoName">…</span><select id="whoSel" aria-label="Bytt spiller"></select></label>
  <h1>Betting</h1>
 
@@ -176,7 +181,7 @@ main{position:relative}
  </div></details>
 
  <details class="fold" id="fSet"><summary>Profil og varsler <small id="setSum"></small></summary><div class="foldBody">
-  <div class="push"><div class="pushHead"><b>Varsler</b><span class="pill" id="pushState">…</span><button class="ghost" id="pushBtn" type="button">…</button></div><p id="pushTxt">Sjekker om varsler er mulig …</p></div>
+  <div class="push"><div class="pushHead"><b>Varsler</b><span class="pill" id="pushState">…</span><button class="ghost" id="pushBtn" type="button">…</button></div><p id="pushTxt">Sjekker om varsler er mulig …</p><p>Velg hva du vil få varsel om:</p><div class="ptypes" id="pushTypes"></div></div>
   <div class="me"><button class="link" id="setDef" type="button">Bruk som standard på denne enheten</button><button class="link" id="rename" type="button">Endre navn</button></div>
  </div></details>
 
@@ -188,7 +193,7 @@ main{position:relative}
   <p>Er du alene om et bet, eller traff alle (eller ingen), får alle innsatsen tilbake.</p>
  </div></div></details>
 
- <p class="stat"><span id="stat">Kobler til …</span> Sveip til høyre for loggen.</p>
+ <p class="stat"><span id="stat">Kobler til …</span> Sveip til høyre for lunsj og logg.</p>
 </main>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -274,9 +279,18 @@ const b64=k=>{const p='='.repeat((4-k.length%4)%4),r=atob((k+p).replace(/-/g,'+'
 const timeout=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tidsavbrudd')),ms))]);
 async function swReg(){await NAV.serviceWorker.register('/sw.js');return timeout(NAV.serviceWorker.ready,8000)}
 async function sub(){const reg=await NAV.serviceWorker.getRegistration();return reg?reg.pushManager.getSubscription():null}
+// Which kinds this device wants. Saved on the device and sent with the subscription.
+const TKEY='forsinkelseslogg:varseltyper',KIND=[['bet','Bet plassert',true],['result','Resultat for dagen',true],['sent','Forsinkelse registrert',false],['lunsj','Ekstra lunsj registrert',false],['rekord','Ny rekord',true]];
+let types=(()=>{let t={};try{t=JSON.parse(ls.get(TKEY)||'{}')||{}}catch(e){}return Object.fromEntries(KIND.map(([k,,d])=>[k,typeof t[k]==='boolean'?t[k]:d]))})();
+function typesUI(){
+ const box=$('pushTypes');box.replaceChildren();
+ KIND.forEach(([k,label])=>{const b=el('button','ptype',label);b.type='button';b.setAttribute('aria-pressed',types[k]);
+  b.onclick=async()=>{types[k]=!types[k];ls.set(TKEY,JSON.stringify(types));typesUI();if(pushOn)try{await savePush()}catch(e){}};box.appendChild(b)});
+}
+typesUI();
 async function savePush(off){
  const s=await sub();if(!s)return;
- await fetch(API+'?push',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sub:s.toJSON(),profile:def||me,off:!!off})});
+ await fetch(API+'?push',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({sub:s.toJSON(),profile:def||me,types,off:!!off})});
  if(off)await s.unsubscribe();
 }
 async function pushUI(){
@@ -289,7 +303,7 @@ async function pushUI(){
  }
  pushOn=!!(await sub().catch(()=>null))&&NOTI.permission==='granted';
  if(NOTI.permission==='denied'){show(false,'Varsler er blokkert. Slå dem på under Innstillinger → Varslinger → Forsinkelser.','');b.textContent='Slå på';b.disabled=true;return}
- show(pushOn,pushOn?'Du får varsel når noen better og når resultatet er klart.':'Slå på for å få varsel når noen better og når resultatet er klart.');
+ show(pushOn,pushOn?'Varsler er på for denne enheten.':'Slå på for å få varsler på denne enheten.');
  b.disabled=false;
 }
 $('pushBtn').onclick=async()=>{
@@ -312,7 +326,7 @@ $('late').onclick=()=>{
  const d=$('date').value,v=prompt('Hvor mange minutter for sent kom hun '+dayName(d)+'?');if(v==null)return;
  const min=parseInt(v,10);if(!(min>=1&&min<=600)){alert('Skriv et tall mellom 1 og 600.');return}
  run(async()=>{
-  const send=()=>fetch('/api/entries',{method:'POST',headers:Object.assign({'content-type':'application/json'},code?{'x-skrivekode':code}:{}),body:JSON.stringify({date:d,min,note:''})});
+  const send=()=>fetch('/api/entries',{method:'POST',headers:Object.assign({'content-type':'application/json'},code?{'x-skrivekode':code}:{}),body:JSON.stringify({date:d,min,note:'',by:def||me})});
   let r=await send();
   while(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(!c)throw new Error('Trenger skrivekode.');code=c.trim();ls.set(CKEY,code);r=await send()}
   if(!r.ok)throw new Error('Kunne ikke lagre i loggen. Prøv igjen.');

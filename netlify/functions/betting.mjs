@@ -1,4 +1,4 @@
-import { store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, state, vapid, subKey, notifyBet, notifyResult } from "../lib/betting.mjs";
+import { kinds, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, state, vapid, subKey, notifyBet, notifyResult } from "../lib/betting.mjs";
 
 // Betting on the delay log. Bets, profile names and manual results live in
 // their own store; the delay entries are read from the log's store so a
@@ -40,7 +40,7 @@ export default async (req) => {
     if (b.off) await s.delete(subKey(endpoint));
     else {
       if (!PROFILES.includes(b.profile)) return json({ error: "Ukjent profil" }, 400);
-      await s.setJSON(subKey(endpoint), { sub: b.sub, profile: b.profile, ts: Date.now() });
+      await s.setJSON(subKey(endpoint), { sub: b.sub, profile: b.profile, types: kinds(b.types), ts: Date.now() });
     }
     return json({ ok: true });
   }

@@ -65,6 +65,21 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .bar{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
 .bar i{display:block;width:100%;max-width:26px;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;opacity:.85}
 .bar.zero i{background:var(--line);opacity:1}
+.bar .stk{display:flex;flex-direction:column-reverse;width:100%;max-width:26px;min-height:2px}
+.bar .stk i{max-width:none;border-radius:0}
+.bar .stk i:last-child{border-radius:4px 4px 0 0}
+.bar .stk i.lu{background:var(--lunch)}
+.seg{display:flex;gap:6px;margin:0 0 14px}
+.seg button{flex:1;background:none;border:1px solid var(--line);color:var(--ink);padding:8px 6px;font-size:.88rem;min-height:40px}
+.legend{display:flex;gap:14px;font-size:.78rem;color:var(--mute);margin:8px 0 0}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--accent)}
+.legend span.lu::before{background:var(--lunch)}
+.wlab span.now{color:var(--ink);font-weight:700}
+.lunchline{margin:8px 0 0;color:var(--mute);font-size:.88rem}
+.lunchline b{color:var(--lunch);font-weight:600}
+.wk .t{display:flex}
+.wk .t i.lu{background:var(--lunch);border-radius:0 5px 5px 0}
+.wk .t i:not(:last-child){border-radius:5px 0 0 5px}
 .bar.now i{opacity:1}
 .bar span{position:absolute;font-size:.68rem;color:var(--mute);white-space:nowrap;padding-bottom:2px}
 .avgl{position:absolute;left:0;right:0;border-top:1.5px dashed var(--mute);opacity:.6;pointer-events:none}
@@ -96,13 +111,14 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto;fo
 </head>
 <body>
 <main>
- <nav><a href="/#logg" data-page="0" aria-current="page">Logg</a><a href="/#betting" data-page="1" id="betLink">Betting</a></nav>
+ <nav><a href="/#logg" data-page="0" aria-current="page">Logg</a><a href="/#lunsj" data-page="1">Lunsj</a><a href="/#betting" data-page="2" id="betLink">Betting</a></nav>
  <h1>Forsinkelseslogg</h1>
  <button class="lead" id="lead" type="button" hidden><span class="cup">🏆</span><span><b id="leadT"></b><small id="leadS"></small></span><span class="arr">›</span></button>
 
  <section class="hero">
   <small>Forsinket denne uken</small>
   <div class="big" id="wk">0 min</div>
+  <p class="lunchline" id="lunchLine" hidden></p>
  </section>
 
  <h2>Ny forsinkelse</h2>
@@ -119,13 +135,14 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto;fo
  </div>
 
  <details class="fold" id="fStat"><summary>Statistikk <small id="statSum"></small></summary><div class="foldBody">
+ <div class="seg" id="filt" role="group" aria-label="Vis"><button type="button" data-f="alt">Alt</button><button type="button" data-f="sent">Forsinkelser</button><button type="button" data-f="lunsj">Lunsj</button></div>
  <section class="stats">
    <div><b id="m30">0 min</b><span>Siste 30 dager</span></div>
    <div><b id="y1">0 min</b><span>Siste år</span></div>
    <div><b id="avg">0 min</b><span>Snitt per uke</span></div>
   </section>
 
-  <h3>Rekorder</h3>
+  <h3>Rekorder (forsinkelser)</h3>
   <div class="rec">
    <div><span>Verste dag</span><b id="rDay">–</b><small id="rDayS"></small></div>
    <div><span>Verste uke</span><b id="rWk">–</b><small id="rWkS"></small></div>
@@ -134,6 +151,7 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto;fo
   <h3>Siste 12 uker</h3>
   <div class="chart" id="chart"></div>
   <div class="wlab" id="wlab"></div>
+  <div class="legend" id="legend"><span>Forsinkelse</span><span class="lu">Ekstra lunsj</span></div>
   <p class="cnote" id="chartNote"></p>
  </div></details>
 
@@ -144,14 +162,15 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto;fo
  <h2>Alle registreringer</h2>
  <div id="log"></div>
 
- <p class="note"><span id="stat">Kobler til …</span> Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med.</p>
+ <p class="note"><span id="stat">Kobler til …</span> Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med. Ekstra lunsj registreres på Lunsj-fanen og telles med i statistikken når «Alt» eller «Lunsj» er valgt.</p>
 </main>
 <script>{const d=document.getElementById('fStat'),k='forsinkelseslogg:fold:fStat';try{if(localStorage.getItem(k)==='1')d.open=true}catch(e){}d.addEventListener('toggle',()=>{try{localStorage.setItem(k,d.open?'1':'0')}catch(e){}})}</script>
 
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/entries';
-let entries=[],code='';
+let entries=[],lunch=[],code='',filt='alt';
+try{filt=localStorage.getItem('forsinkelseslogg:filter')||'alt'}catch(e){}
 try{code=localStorage.getItem('forsinkelseslogg:kode')||''}catch(e){}
 const saveCode=()=>{try{localStorage.setItem('forsinkelseslogg:kode',code)}catch(e){}};
 const $=id=>document.getElementById(id);
@@ -181,7 +200,8 @@ async function add(){
  if(!date){$('err').textContent='Velg en dato.';return}
  if(!(min>=1&&min<=600)){$('err').textContent='Skriv inn antall minutter (1–600).';return}
  $('err').textContent='';$('save').disabled=true;
- try{const saved=await api('POST',{date,min,note:$('note').value.trim()});$('min').value='';$('note').value='';await load();if(saved&&saved.firstOfYear&&window.nyttAar)nyttAar();else if(window.kasinoMsg)kasinoMsg('sent')}
+ try{let by='';try{by=localStorage.getItem('forsinkelseslogg:profil')||''}catch(e){}
+ const saved=await api('POST',{date,min,note:$('note').value.trim(),by});$('min').value='';$('note').value='';await load();if(saved&&saved.firstOfYear&&window.nyttAar)nyttAar();else if(window.kasinoMsg)kasinoMsg('sent')}
  catch(x){$('err').textContent=x.message==='kode'?'Ikke lagret: trenger skrivekode.':'Kunne ikke lagre. Prøv igjen.'}
  $('save').disabled=false;
 }
@@ -193,6 +213,7 @@ async function load(){
  try{
   const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw 0;
   entries=(await r.json()).entries||[];
+  try{const l=await fetch('/api/lunsj',{cache:'no-store'});if(l.ok)lunch=(await l.json()).entries||[]}catch(e){}
   $('stat').textContent='Delt liste: oppdateres automatisk for alle med lenken.';
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
  render();
@@ -219,7 +240,7 @@ function leader(d){
  $('leadS').textContent=prev?'Vinner i '+mName(prevKey)+': '+prev.n+' ('+prev.v+(document.documentElement.classList.contains('jul')?' pepperkaker)':' cr)'):'Trykk for å bette';
  $('lead').hidden=false;
 }
-$('lead').onclick=()=>{try{if(parent.pager)return parent.pager.go(1)}catch(e){}location.href='/#betting'};
+$('lead').onclick=()=>{try{if(parent.pager)return parent.pager.go(2)}catch(e){}location.href='/#betting'};
 function checkDup(){
  const d=$('date').value,box=$('dup');
  const hit=d?entries.filter(e=>e.date===d):[];
@@ -233,35 +254,52 @@ $('save').onclick=add;
 ['min','note'].forEach(i=>$(i).addEventListener('keydown',e=>{if(e.key==='Enter')add()}));
 $('moreW').onclick=()=>{showAll=!showAll;render()};
 
+$('filt').querySelectorAll('button').forEach(b=>b.onclick=()=>{filt=b.dataset.f;try{localStorage.setItem('forsinkelseslogg:filter',filt)}catch(e){}render()});
 function render(){
  checkDup();
+ $('filt').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===filt));
  const today=new Date();today.setHours(0,0,0,0);
  const wk=monday(today),tm=d=>parse(d).getTime();
- $('wk').textContent=fmt(sum(entries.filter(e=>monday(parse(e.date)).getTime()===wk.getTime())));
+ const inWeek=e=>monday(parse(e.date)).getTime()===wk.getTime();
+ const lateWk=sum(entries.filter(inWeek)),lunchWk=sum(lunch.filter(inWeek));
+ $('wk').textContent=fmt(lateWk);
+ $('lunchLine').hidden=!lunchWk;
+ if(lunchWk){$('lunchLine').replaceChildren('+ ',el('b',null,fmt(lunchWk)+' ekstra lunsj'),' = '+fmt(lateWk+lunchWk)+' totalt')}
+ // The statistics follow the filter: everything, only late arrivals, or only extra lunch.
+ const pickF=filt==='sent'?entries:filt==='lunsj'?lunch:entries.concat(lunch);
  const d30=new Date(today);d30.setDate(d30.getDate()-30);
  const d365=new Date(today);d365.setFullYear(d365.getFullYear()-1);
- $('m30').textContent=fmt(sum(entries.filter(e=>tm(e.date)>=d30.getTime()&&tm(e.date)<=today.getTime())));$('statSum').textContent='Siste 30 dager: '+$('m30').textContent;
- $('y1').textContent=fmt(sum(entries.filter(e=>tm(e.date)>=d365.getTime()&&tm(e.date)<=today.getTime())));
+ $('m30').textContent=fmt(sum(pickF.filter(e=>tm(e.date)>=d30.getTime()&&tm(e.date)<=today.getTime())));
+ $('statSum').textContent='Siste 30 dager: '+$('m30').textContent+(filt==='lunsj'?' lunsj':filt==='alt'&&lunch.length?' totalt':'');
+ $('y1').textContent=fmt(sum(pickF.filter(e=>tm(e.date)>=d365.getTime()&&tm(e.date)<=today.getTime())));
 
  const W=$('weeks'),L=$('log');W.replaceChildren();L.replaceChildren();
- if(!entries.length){
+ const both=entries.concat(lunch);
+ if(!both.length){
   $('avg').textContent='0 min';$('moreW').hidden=true;
   W.appendChild(el('p','empty','Ingen registreringer ennå. Legg inn første forsinkelse over.'));
-  L.appendChild(el('p','empty','Tomt her også.'));$('chart').replaceChildren();$('wlab').replaceChildren();['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='');return;
+  L.appendChild(el('p','empty','Tomt her også.'));$('chart').replaceChildren();$('wlab').replaceChildren();['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='');if(window.fun)fun.logg([],[]);return;
  }
  const sorted=[...entries].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
- const first=monday(parse(sorted[sorted.length-1].date));
- const lastE=monday(parse(sorted[0].date));
+ const dates=both.map(e=>e.date).sort();
+ const first=monday(parse(dates[0]));
+ const lastE=monday(parse(dates[dates.length-1]));
  const end=lastE>wk?lastE:wk;
  const nWeeks=Math.round((end-first)/(7*864e5))+1;
- $('avg').textContent=fmt(sum(entries)/nWeeks);
+ // Average per week for the chosen filter, counted from that set's own first week.
+ const fDates=pickF.map(e=>e.date).sort(),fWeeks=fDates.length?Math.round((end-monday(parse(fDates[0])))/(7*864e5))+1:1;
+ const avgF=sum(pickF)/fWeeks;
+ $('avg').textContent=fmt(avgF);
 
- const by={};entries.forEach(e=>{const k=iso(monday(parse(e.date)));(by[k]=by[k]||{s:0,n:0});by[k].s+=e.min;by[k].n++});
+ const by={};const slot=k=>(by[k]=by[k]||{s:0,n:0,l:0});
+ entries.forEach(e=>{const b=slot(iso(monday(parse(e.date))));b.s+=e.min;b.n++});
+ lunch.forEach(e=>{slot(iso(monday(parse(e.date)))).l+=e.min});
  const rows=[];
- for(let d=new Date(end);d>=first;d.setDate(d.getDate()-7)){const k=iso(d);rows.push({d:new Date(d),s:(by[k]||{s:0}).s,n:(by[k]||{n:0}).n})}
- const max=Math.max(...rows.map(r=>r.s),1);
- chart(rows.slice(0,12).reverse(),sum(entries)/nWeeks,wk);
- // Records: the single worst day and the worst week (all minutes that day/week added up).
+ for(let d=new Date(end);d>=first;d.setDate(d.getDate()-7)){const b=by[iso(d)]||{s:0,n:0,l:0};rows.push({d:new Date(d),s:b.s,n:b.n,l:b.l})}
+ const max=Math.max(...rows.map(r=>r.s+r.l),1);
+ chart(rows.slice(0,12).reverse(),avgF,wk);
+ if(entries.length){
+ // Records: the single worst day and the worst week (all minutes that day/week added up). Late arrivals only.
  const byDay={};entries.forEach(e=>{byDay[e.date]=(byDay[e.date]||0)+e.min});
  const wd=Object.entries(byDay).sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?1:-1))[0];
  $('rDay').textContent=fmt(wd[1]);$('rDayS').textContent=parse(wd[0]).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short',year:'numeric'});
@@ -270,12 +308,16 @@ function render(){
  const fresh3=(Date.now()-parse(wd[0]).getTime())<3*864e5;
  stamp('rDay',fresh3&&wd[1]>0,'d'+wd[0]+wd[1]);stamp('rWk',ww.d.getTime()===wk.getTime()&&ww.s>0&&rows.length>1,'w'+iso(ww.d)+ww.s);
  $('rWk').textContent=fmt(ww.s);$('rWkS').textContent='Uke '+isoWeek(ww.d)+', '+ww.d.getFullYear()+' ('+ww.n+(ww.n===1?' gang':' ganger')+')';
+ }else{['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='')}
  (showAll?rows:rows.slice(0,8)).forEach(r=>{
   const row=el('div','wk');
   const a=el('div',null,'Uke '+isoWeek(r.d));
   a.appendChild(el('em',null,r.d.toLocaleDateString('nb-NO',{day:'numeric',month:'short'})));
-  const t=el('div','t'),i=document.createElement('i');i.style.width=(r.s/max*100)+'%';t.appendChild(i);
-  const v=el('div','v',r.s?fmt(r.s):'–');v.appendChild(el('em',null,r.n?r.n+(r.n===1?' gang':' ganger'):'i tide'));
+  const t=el('div','t');
+  if(r.s){const i=document.createElement('i');i.style.width=(r.s/max*100)+'%';t.appendChild(i)}
+  if(r.l){const i=el('i','lu');i.style.width=(r.l/max*100)+'%';t.appendChild(i)}
+  const v=el('div','v',r.s+r.l?fmt(r.s+r.l):'–');
+  v.appendChild(el('em',null,(r.n?r.n+(r.n===1?' gang':' ganger'):'i tide')+(r.l?' · '+fmt(r.l)+' lunsj':'')));
   row.append(a,t,v);W.appendChild(row);
  });
  $('moreW').hidden=rows.length<=8;
@@ -285,6 +327,7 @@ function render(){
  const fresh=prevIds?sorted.filter(e=>!prevIds.has(e.id)):[];prevIds=new Set(sorted.map(e=>e.id));
  if(fresh.length&&window.fx)fx.shake($('wk'));
  if(window.fun)fun.logg(sorted,fresh);
+ if(!sorted.length)L.appendChild(el('p','empty','Ingen forsinkelser ennå.'));
  sorted.forEach(e=>{
   const row=el('div',fresh.includes(e)?'log fxnew':'log');
   const a=el('div',null,parse(e.date).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short',year:'numeric'}));
@@ -302,18 +345,25 @@ function stamp(id,on,key){
  let seen='';try{seen=localStorage.getItem('forsinkelseslogg:rekord:'+id)||''}catch(e){}
  if(seen!==key){try{localStorage.setItem('forsinkelseslogg:rekord:'+id,key)}catch(e){}if(window.fx)fx.stampIn(st);if(window.kasinoMsg)setTimeout(()=>kasinoMsg('rek'),900)}
 }
+// Stacked bars: late arrivals at the bottom, extra lunch on top (filtered by the toggle).
 function chart(rows,avg,wk){
- while(rows.length<12){const d=new Date(rows[0].d);d.setDate(d.getDate()-7);rows.unshift({d,s:0,n:0})}
+ while(rows.length<12){const d=new Date(rows[0].d);d.setDate(d.getDate()-7);rows.unshift({d,s:0,n:0,l:0})}
  const C=$('chart'),Lb=$('wlab');C.replaceChildren();Lb.replaceChildren();
- const max=Math.max(...rows.map(r=>r.s),avg,1);
+ const sh=filt!=='lunsj',lh=filt!=='sent',val=r=>(sh?r.s:0)+(lh?r.l:0);
+ const max=Math.max(...rows.map(val),avg,1);
  rows.forEach(r=>{
-  const b=el('div','bar'+(r.s?'':' zero')+(r.d.getTime()===wk.getTime()?' now':''));
-  const h=r.s/max*82;const i=document.createElement('i');i.style.height=h+'%';
-  if(r.s){const v=el('span',null,fmt(r.s).replace(' min','m'));v.style.bottom=h+'%';b.append(v)}
-  b.append(i);C.appendChild(b);Lb.appendChild(el('span',null,isoWeek(r.d)));
+  const tot=val(r),now=r.d.getTime()===wk.getTime();
+  const b=el('div','bar'+(tot?'':' zero')+(now?' now':''));
+  const h=tot/max*82,stk=el('div','stk');stk.style.height=h+'%';
+  if(!tot)stk.appendChild(document.createElement('i'));
+  if(sh&&r.s){const i=document.createElement('i');i.style.height=(r.s/tot*100)+'%';stk.appendChild(i)}
+  if(lh&&r.l){const i=el('i','lu');i.style.height=(r.l/tot*100)+'%';stk.appendChild(i)}
+  if(tot){const v=el('span',null,fmt(tot).replace(' min','m'));v.style.bottom=h+'%';b.append(v)}
+  b.append(stk);C.appendChild(b);Lb.appendChild(el('span',now?'now':null,isoWeek(r.d)));
  });
  if(avg>0){const a=el('div','avgl');a.style.bottom=(avg/max*82)+'%';C.appendChild(a)}
- $('chartNote').textContent='Stiplet linje: snitt per uke ('+fmt(avg)+'). Tallene under er ukenummer.';
+ $('legend').hidden=filt!=='alt';
+ $('chartNote').textContent='Stiplet linje: snitt per uke ('+fmt(avg)+'). Tallene under er ukenummer, uthevet er denne uken.';
 }
 load();
 setInterval(()=>{if(!document.hidden)load()},10000);

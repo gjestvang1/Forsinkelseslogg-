@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { store as betStore, state as betState, notifyResult, push } from "../lib/betting.mjs";
+import { store as betStore, state as betState, notifyResult, push, dayLabel, PROFILES } from "../lib/betting.mjs";
 
 // Worst single day and worst week (Monday start), summing all minutes in them.
 const monday = (d) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x.toISOString().slice(0, 10); };
@@ -61,8 +61,11 @@ export default async (req) => {
       const a = worst(old), z = worst([...old, rec]), parts = [];
       if (z.day[1] > a.day[1]) parts.push(`Verste dag: ${fmt(z.day[1])} (${z.day[0].split("-").reverse().slice(0, 2).join(".")})`);
       if (z.week[1] > a.week[1]) parts.push(`Verste uke: ${fmt(z.week[1])} (uke ${isoWeek(z.week[0])})`);
-      if (parts.length) await push(betStore(), { title: "NY REKORD", body: parts.join(" · "), tag: "rekord", url: "/#logg", vibrate: [200, 100, 200, 100, 400] }).catch(() => {});
+      if (parts.length) await push(betStore(), { title: "NY REKORD", body: parts.join(" · "), tag: "rekord", kind: "rekord", url: "/#logg", vibrate: [200, 100, 200, 100, 400] }).catch(() => {});
     }
+    // For those who chose it: a late arrival was registered (not to the one who registered it).
+    const by = PROFILES.includes(b.by) ? b.by : undefined;
+    await push(betStore(), { title: "Forsinkelse registrert", body: `${dayLabel(b.date)}: ${fmt(min)} for sent${rec.note ? " · " + rec.note : ""}`, tag: "sent-" + id, kind: "sent", url: "/#logg" }, by).catch(() => {});
     if (settles) await notifyResult(betStore(), b.date).catch(() => {});
     // First late arrival of a new year (only once there is earlier history).
     const firstOfYear = old.length > 0 && !old.some((e) => e.date.slice(0, 4) === b.date.slice(0, 4));

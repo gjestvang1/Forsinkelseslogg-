@@ -22,7 +22,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);overscroll-b
 :root{--sat:env(safe-area-inset-top,0px)}
 #cap{position:fixed;left:0;right:0;top:0;height:var(--sat);background:var(--cap);z-index:4}
 #view{position:fixed;left:0;right:0;bottom:0;top:var(--sat);overflow:hidden}
-#track{display:flex;width:200%;height:100%;will-change:transform;transform:translate3d(0,0,0)}
+#track{display:flex;width:300%;height:100%;will-change:transform;transform:translate3d(0,0,0)}
 #track.anim{transition:transform .32s cubic-bezier(.22,.61,.36,1)}
 #lights{position:fixed;left:0;right:0;top:var(--sat);height:16px;z-index:6;pointer-events:none;display:flex;justify-content:space-around}
 #lights i{width:8px;height:11px;border-radius:50% 50% 45% 45%;margin-top:1px;animation:blink 1.6s ease-in-out infinite}
@@ -31,14 +31,15 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);overscroll-b
 #sleigh{position:fixed;top:18%;left:0;z-index:6;pointer-events:none;font-size:30px;white-space:nowrap;transform:translateX(-200px)}
 #snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .jul{--bg:#5A0F16;--cap:#8A1C26}
-iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
+iframe{width:33.3334%;height:100%;border:0;display:block;background:var(--bg)}
 </style>
 </head>
 <body>
 <div id="cap"></div>
 <div id="view"><div id="track">
  <iframe id="f0" src="/logg.html" title="Logg"></iframe>
- <iframe id="f1" src="/betting.html" title="Betting"></iframe>
+ <iframe id="f1" src="/lunsj.html" title="Lunsj"></iframe>
+ <iframe id="f2" src="/betting.html" title="Betting"></iframe>
 </div></div>
 <canvas id="snow" hidden></canvas>
 <div id="lights" hidden></div>
@@ -57,10 +58,11 @@ iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
 })();
 </script>
 <script>
-// Both pages stay loaded side by side; swiping slides the track 1:1 with the finger.
+// All three pages stay loaded side by side; swiping slides the track 1:1 with the finger.
 (()=>{
- const track=document.getElementById('track'),titles=['Forsinkelseslogg','Forsinkelsesbetting'];
- let page=location.hash==='#betting'?1:0,base=0,raf=0,pending=null;
+ const track=document.getElementById('track'),titles=['Forsinkelseslogg','Ekstra lunsj','Forsinkelsesbetting'],HASH=['#logg','#lunsj','#betting'],LAST=HASH.length-1;
+ const fromHash=()=>Math.max(0,HASH.indexOf(location.hash));
+ let page=fromHash(),base=0,raf=0,pending=null;
  const W=()=>track.parentNode.clientWidth;
  const set=x=>{pending=x;if(!raf)raf=requestAnimationFrame(()=>{raf=0;track.style.transform='translate3d('+pending+'px,0,0)'})};
  function go(i,animate){
@@ -68,27 +70,27 @@ iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
   if(raf){cancelAnimationFrame(raf);raf=0}
   track.style.transform='translate3d('+(-i*W())+'px,0,0)';
   document.title=titles[i];
-  const h=i?'#betting':'#logg';if(location.hash!==h)history.replaceState(null,'',h);
+  const h=HASH[i];if(location.hash!==h)history.replaceState(null,'',h);
  }
  window.pager={
   get page(){return page},
   start(){track.classList.remove('anim');base=-page*W()},
   move(dx){
-   let x=base+dx;const min=-W();
+   let x=base+dx;const min=-LAST*W();
    if(x>0)x=x/3;else if(x<min)x=min+(x-min)/3; // rubber band at the ends
    set(x);
   },
   end(dx,v){
    const w=W();let i=page;
-   if(dx<-w*.25||v<-.35)i=Math.min(1,page+1);else if(dx>w*.25||v>.35)i=Math.max(0,page-1);
+   if(dx<-w*.25||v<-.35)i=Math.min(LAST,page+1);else if(dx>w*.25||v>.35)i=Math.max(0,page-1);
    go(i);
   },
   go
  };
  go(page,false);
  addEventListener('resize',()=>go(page,false));
- addEventListener('hashchange',()=>go(location.hash==='#betting'?1:0));
- // December: gentle snowfall over both pages.
+ addEventListener('hashchange',()=>go(fromHash()));
+ // December: gentle snowfall over all pages.
  if(new Date().getMonth()===11||/jul/.test(location.search)){
   document.documentElement.classList.add('jul');
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches){

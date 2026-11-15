@@ -1,10 +1,11 @@
 // Runs inside each page. The pages live side by side in the shell (index.html),
 // and this file feeds the finger's movement to the shell so the slide follows it 1:1.
 (() => {
-  const me = location.pathname.startsWith("/betting") ? 1 : 0;
+  const me = ["/logg", "/lunsj", "/betting"].findIndex((p) => location.pathname.startsWith(p));
+  const hash = ["#logg", "#lunsj", "#betting"][me] || "";
   let pager = null;
   try { if (window.parent !== window) pager = window.parent.pager; } catch (e) {}
-  if (!pager) { location.replace(me ? "/#betting" : "/"); return; } // opened directly: load the shell
+  if (!pager) { location.replace(me > 0 ? "/" + hash : "/"); return; } // opened directly: load the shell
   document.documentElement.classList.add("embedded"); // the shell already clears the status bar
   document.querySelectorAll("nav a[data-page]").forEach((a) =>
     a.addEventListener("click", (e) => { e.preventDefault(); pager.go(+a.dataset.page); }));

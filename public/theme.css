@@ -1,6 +1,6 @@
 /* Kasino: green felt, gold and cream. Loaded after each page's own styles. */
 :root,:root:not([data-theme="light"]),:root[data-theme="dark"]{
- --bg:#0E3B2E;--surface:#134A3A;--ink:#F6EBD0;--mute:#A9C2B5;--line:#2C6452;--accent:#E5B64A;--good:#7BE0A6;--bad:#FF8A80;--felt-hi:#17604A;--felt-lo:#0B2F25;color-scheme:dark}
+ --bg:#0E3B2E;--surface:#134A3A;--ink:#F6EBD0;--mute:#A9C2B5;--line:#2C6452;--accent:#E5B64A;--good:#7BE0A6;--bad:#FF8A80;--felt-hi:#17604A;--felt-lo:#0B2F25;--lunch:#7CC8E8;color-scheme:dark}
 body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--felt-lo)}
 /* The felt: a fixed layer so its top edge is always exactly --felt-hi, matching the strip
    behind the Dynamic Island (index.html #cap). */
@@ -26,7 +26,6 @@ nav a b{background:var(--accent);color:var(--felt-lo)}
 .add,.card,.rec div,details.fold,.push,.player{border-radius:14px;background:rgba(0,0,0,.16);border-color:var(--line)}
 .rec b{color:var(--accent);font-weight:900}
 .bar i{background:var(--accent);opacity:.9}
-.bar.now i{background:var(--ink)}
 .wk .t i{background:var(--accent)}
 .avgl em{background:var(--bg)}
 input,select{background:rgba(0,0,0,.22);border-color:var(--line);color:var(--ink)}
@@ -69,11 +68,11 @@ details.fold>summary::after{border-color:var(--accent)}
 .fx .player[aria-pressed=true]{animation:glow 2.4s ease-in-out infinite}
 @keyframes glow{50%{box-shadow:0 0 0 3px rgba(229,182,74,.25),0 0 22px rgba(229,182,74,.25)}}
 .fxchip{position:fixed;width:22px;height:22px;border-radius:50%;z-index:50;pointer-events:none;background:radial-gradient(circle,var(--accent) 0 38%,transparent 39%),repeating-conic-gradient(var(--ink) 0 30deg,var(--bad) 30deg 60deg);box-shadow:0 2px 6px rgba(0,0,0,.4)}
-.fx:not(.fxdone) .bar i{transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.8,.3,1) both}
+.fx:not(.fxdone) .bar .stk{transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.8,.3,1) both}
 @keyframes grow{from{transform:scaleY(0)}}
 
 /* December: Christmas party ("julebord") */
-:root.jul{--bg:#5A0F16;--surface:#6E1720;--line:#8E2A33;--mute:#E8B9B0;--felt-hi:#8A1C26;--felt-lo:#3E0A10}
+:root.jul{--lunch:#9FE3B0;--bg:#5A0F16;--surface:#6E1720;--line:#8E2A33;--mute:#E8B9B0;--felt-hi:#8A1C26;--felt-lo:#3E0A10}
 .jul h1::before{content:"❄ ✦ ❄ ✦ ❄"}
 .jul .hero{box-shadow:inset 0 0 0 5px var(--bg),inset 0 0 0 6px rgba(229,182,74,.5)}
 .jul .hero small::after{content:"  🎄"}

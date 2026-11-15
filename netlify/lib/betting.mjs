@@ -92,9 +92,14 @@ const subKey = (endpoint) => "sub/" + createHash("sha256").update(endpoint).dige
 
 const dayLabel = (d) => (d === todayOslo() ? "i dag" : d.split("-").reverse().slice(0, 2).join("."));
 
-// Send to every subscribed device, optionally skipping one profile. Dead subscriptions are dropped.
+// What each device can be notified about, and the default for devices that never chose.
+const KINDS = { bet: true, result: true, rekord: true, sent: false, lunsj: false };
+const kinds = (t) => Object.fromEntries(Object.entries(KINDS).map(([k, d]) => [k, typeof t?.[k] === "boolean" ? t[k] : d]));
+
+// Send to every subscribed device that wants this kind (msg.kind), optionally skipping one
+// profile. Dead subscriptions are dropped.
 async function push(s, msg, exceptProfile) {
-  const subs = (await all(s, "sub/")).filter((x) => x.profile !== exceptProfile);
+  const subs = (await all(s, "sub/")).filter((x) => x.profile !== exceptProfile && (!msg.kind || kinds(x.types)[msg.kind]));
   if (!subs.length) return;
   const k = await vapid(s);
   const payload = JSON.stringify({ url: "/#betting", ...msg });
@@ -113,6 +118,7 @@ function notifyBet(s, rec, names, changed) {
     title: "Bet placed",
     body: `${names[rec.profile]}${changed ? " endret bettet" : ""}: ${what} (${dayLabel(rec.date)}), ${rec.stake} ${todayOslo().slice(5, 7) === "12" ? "pepperkaker" : "credits"}`,
     tag: "bet",
+    kind: "bet",
   }, rec.profile);
 }
 
@@ -132,7 +138,8 @@ async function notifyResult(s, date) {
     title: `Resultat ${dayLabel(date)}: ${r.min > 0 ? r.min + " min for sent" : "i tide"}`,
     body: parts.join(" · "),
     tag: "result-" + date,
+    kind: "result",
   });
 }
 
-export { push, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, all, state, vapid, subKey, notifyBet, notifyResult };
+export { KINDS, kinds, dayLabel, push, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, all, state, vapid, subKey, notifyBet, notifyResult };
