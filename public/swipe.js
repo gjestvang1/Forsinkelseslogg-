@@ -1,8 +1,8 @@
 // Runs inside each page. The pages live side by side in the shell (index.html),
 // and this file feeds the finger's movement to the shell so the slide follows it 1:1.
 (() => {
-  const me = ["/logg", "/lunsj", "/betting"].findIndex((p) => location.pathname.startsWith(p));
-  const hash = ["#logg", "#lunsj", "#betting"][me] || "";
+  const me = ["/logg", "/betting"].findIndex((p) => location.pathname.startsWith(p));
+  const hash = ["#logg", "#betting"][me] || "";
   let pager = null;
   try { if (window.parent !== window) pager = window.parent.pager; } catch (e) {}
   if (!pager) { location.replace(me > 0 ? "/" + hash : "/"); return; } // opened directly: load the shell
@@ -14,9 +14,9 @@
     a.addEventListener("click", (e) => { e.preventDefault(); pager.go(+a.dataset.page); }));
   // The gear opens the settings, which live on the betting page.
   const gear = document.getElementById("gear");
-  if (gear && me !== 2) gear.addEventListener("click", () => {
-    pager.go(2);
-    try { const w = window.parent.document.getElementById("f2").contentWindow; w.openSettings && w.openSettings(); } catch (e) {}
+  if (gear && me !== 1) gear.addEventListener("click", () => {
+    pager.go(1);
+    try { const w = window.parent.document.getElementById("f1").contentWindow; w.openSettings && w.openSettings(); } catch (e) {}
   });
   let x0 = 0, y0 = 0, dx = 0, mode = "", lastX = 0, lastT = 0, v = 0;
   document.addEventListener("touchstart", (e) => {

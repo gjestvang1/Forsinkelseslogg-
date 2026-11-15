@@ -29,7 +29,7 @@ html,body{margin:0;height:100%;height:100lvh;background:var(--felt-lo-shell,#0B2
 /* Height is set from JS (--vh) so the pages reach the very bottom of the screen, also behind the
    home indicator, even when iOS reports a viewport that is shorter than the screen. */
 #view{position:fixed;left:0;right:0;top:0;height:var(--vh,100vh);height:max(var(--vh,100vh),100lvh,calc(100% + env(safe-area-inset-bottom,0px)));overflow:hidden}
-#track{display:flex;width:300%;height:100%;will-change:transform;transform:translate3d(0,0,0)}
+#track{display:flex;width:200%;height:100%;will-change:transform;transform:translate3d(0,0,0)}
 #track.anim{transition:transform .32s cubic-bezier(.22,.61,.36,1)}
 #lights{position:fixed;left:0;right:0;top:var(--sat);height:16px;z-index:6;pointer-events:none;display:flex;justify-content:space-around}
 #lights i{width:8px;height:11px;border-radius:50% 50% 45% 45%;margin-top:1px;animation:blink 1.6s ease-in-out infinite}
@@ -38,15 +38,14 @@ html,body{margin:0;height:100%;height:100lvh;background:var(--felt-lo-shell,#0B2
 #sleigh{position:fixed;top:18%;left:0;z-index:6;pointer-events:none;font-size:30px;white-space:nowrap;transform:translateX(-200px)}
 #snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .jul{--bg:#5A0F16;--cap:#8A1C26}
-iframe{width:33.3334%;height:100%;border:0;display:block;background:var(--bg)}
+iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
 </style>
 </head>
 <body>
 <div id="cap"></div>
 <div id="view"><div id="track">
  <iframe id="f0" src="/logg.html" title="Logg"></iframe>
- <iframe id="f1" src="/lunsj.html" title="Lunsj"></iframe>
- <iframe id="f2" src="/betting.html" title="Betting"></iframe>
+ <iframe id="f1" src="/betting.html" title="Betting"></iframe>
 </div></div>
 <canvas id="snow" hidden></canvas>
 <div id="lights" hidden></div>
@@ -72,9 +71,9 @@ iframe{width:33.3334%;height:100%;border:0;display:block;background:var(--bg)}
 })();
 </script>
 <script>
-// All three pages stay loaded side by side; swiping slides the track 1:1 with the finger.
+// Both pages stay loaded side by side; swiping slides the track 1:1 with the finger.
 (()=>{
- const track=document.getElementById('track'),titles=['Forsinkelseslogg','Ekstra lunsj','Forsinkelsesbetting'],HASH=['#logg','#lunsj','#betting'],LAST=HASH.length-1;
+ const track=document.getElementById('track'),titles=['Forsinkelseslogg','Forsinkelsesbetting'],HASH=['#logg','#betting'],LAST=HASH.length-1;
  const fromHash=()=>Math.max(0,HASH.indexOf(location.hash));
  let page=fromHash(),base=0,raf=0,pending=null;
  const W=()=>track.parentNode.clientWidth;

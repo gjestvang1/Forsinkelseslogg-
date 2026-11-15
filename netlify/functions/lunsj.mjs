@@ -41,7 +41,7 @@ export default async (req) => {
     await s.setJSON(id, rec);
     // For those who chose it (not to the one who registered it).
     const by = PROFILES.includes(b.by) ? b.by : undefined;
-    await push(betStore(), { title: "Ekstra lunsj registrert", body: `${dayLabel(b.date)}: ${min} min ekstra lunsj${rec.note ? " · " + rec.note : ""}`, tag: "lunsj-" + id, kind: "lunsj", url: "/#lunsj" }, by).catch(() => {});
+    await push(betStore(), { title: "Ekstra lunsj registrert", body: `${dayLabel(b.date)}: ${min} min ekstra lunsj${rec.note ? " · " + rec.note : ""}`, tag: "lunsj-" + id, kind: "lunsj", url: "/#logg" }, by).catch(() => {});
     return json(rec, 201);
   }
 

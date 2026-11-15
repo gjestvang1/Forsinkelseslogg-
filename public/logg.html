@@ -148,7 +148,7 @@ main{position:relative}
 <body>
 <main>
  <button class="gear" id="gear" type="button" aria-label="Innstillinger" title="Innstillinger"></button>
- <nav><a href="/#logg" data-page="0" aria-current="page">Logg</a><a href="/#lunsj" data-page="1">Lunsj</a><a href="/#betting" data-page="2" id="betLink">Betting</a></nav>
+ <nav><a href="/#logg" data-page="0" aria-current="page">Logg</a><a href="/#betting" data-page="1" id="betLink">Betting</a></nav>
  <h1>Forsinkelseslogg</h1>
  <button class="lead" id="lead" type="button" hidden><span class="cup">🏆</span><span><b id="leadT"></b><small id="leadS"></small></span><span class="arr">›</span></button>
 
@@ -201,7 +201,7 @@ main{position:relative}
  <div id="log"></div>
  <p class="cnote">Trykk på en registrering for å endre den.</p>
 
- <p class="note"><span id="stat">Kobler til …</span> Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med. Ekstra lunsj kan registreres her eller på Lunsj-fanen, og telles med i statistikken når «Alt» eller «Lunsj» er valgt.</p>
+ <p class="note"><span id="stat">Kobler til …</span> Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med. Ekstra lunsj registreres her med «Ekstra lunsj»-knappen i skjemaet, og telles med i statistikken når «Alt» eller «Lunsj» er valgt.</p>
 </main>
 <script>{const d=document.getElementById('fStat'),k='forsinkelseslogg:fold:fStat';try{if(localStorage.getItem(k)==='1')d.open=true}catch(e){}d.addEventListener('toggle',()=>{try{localStorage.setItem(k,d.open?'1':'0')}catch(e){}})}</script>
 
@@ -279,7 +279,7 @@ function leader(d){
  $('leadS').textContent=prev?'Vinner i '+mName(prevKey)+': '+prev.n+' ('+prev.v+(document.documentElement.classList.contains('jul')?' pepperkaker)':' cr)'):'Trykk for å bette';
  $('lead').hidden=false;
 }
-$('lead').onclick=()=>{try{if(parent.pager)return parent.pager.go(2)}catch(e){}location.href='/#betting'};
+$('lead').onclick=()=>{try{if(parent.pager)return parent.pager.go(1)}catch(e){}location.href='/#betting'};
 function checkDup(){
  const d=$('date').value,box=$('dup');
  const hit=d?(kind==='lunsj'?lunch:entries).filter(e=>e.date===d):[];
