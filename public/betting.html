@@ -70,6 +70,20 @@ button:disabled{opacity:.5;cursor:default}
 .push{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;display:grid;gap:8px;font-size:.9rem}
 .push p{margin:0;color:var(--mute)}
 .ptypes{display:grid;gap:6px}
+.turnHead{display:flex;align-items:center;gap:8px}.turnHead b{flex:1}
+.turnNav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.turnNav button{min-width:44px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.15);color:var(--ink);font-size:1.1rem}
+.turnNav span{font-weight:700;text-transform:capitalize}
+.tpal{display:flex;flex-wrap:wrap;gap:6px}
+.tpal button{min-height:40px;min-width:52px;padding:4px 10px;border-radius:999px;border:2px solid var(--line);background:rgba(0,0,0,.15);color:var(--ink);font-weight:700;font-size:.9rem}
+.tpal button[aria-pressed=true]{background:#F6EBD0;color:#0B2F25;border-color:#F6EBD0}
+.tcal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.tcal small{text-align:center;color:var(--mute);font-size:.72rem}
+.tcal button{aspect-ratio:1/1.1;border-radius:8px;border:1px solid var(--line);background:rgba(0,0,0,.12);color:var(--ink);display:grid;grid-template-rows:auto 1fr;padding:3px 2px;font-size:.72rem;line-height:1.1}
+.tcal button b{font-size:.68rem;align-self:center;font-weight:800;overflow:hidden;text-overflow:clip}
+.tcal button.on{background:#F6EBD0;color:#0B2F25;border-color:#F6EBD0}
+.tcal button.chg{outline:2px solid var(--accent);outline-offset:1px}
+.tcal button.today{border-color:var(--accent)}
 .ptype{display:flex;justify-content:space-between;align-items:center;width:100%;background:rgba(0,0,0,.15);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:.92rem;min-height:44px;text-align:left}
 .ptype::after{content:"Av";font-size:.75rem;font-weight:600;border-radius:999px;padding:2px 10px;background:rgba(0,0,0,.25);color:var(--mute)}
 .ptype[aria-pressed=true]{border-color:var(--accent)}
@@ -208,11 +222,20 @@ main{position:relative}
   <div class="sheetHead"><b id="sheetT">Innstillinger</b><button type="button" class="sheetX" id="sheetX" aria-label="Lukk">✕</button></div>
   <p class="sheetSub">Profil: <b id="setSum"></b></p>
 <div class="push"><div class="pushHead"><b>Varsler</b><span class="pill" id="pushState">…</span><button class="ghost" id="pushBtn" type="button">…</button></div><p id="pushTxt">Sjekker om varsler er mulig …</p><p>Velg hva du vil få varsel om:</p><div class="ptypes" id="pushTypes"></div></div>
+  <div class="push" id="turnus"><div class="turnHead"><b>Turnus</b></div>
+   <p>Trykk på en vaktkode, og trykk så på dagene som har den vakta. «Fri» brukes for fri og fravær.</p>
+   <div class="tpal" id="tPal"></div>
+   <div class="turnNav"><button type="button" id="tPrev" aria-label="Forrige måned">‹</button><span id="tMon"></span><button type="button" id="tNext" aria-label="Neste måned">›</button></div>
+   <div class="tcal" id="tDays"></div>
+   <button class="go" type="button" id="tSave" disabled>Lagre turnus</button>
+   <p id="tMsg" role="status"></p>
+  </div>
   <div class="me"><button class="link" id="setDef" type="button">Bruk som standard på denne enheten</button><button class="link" id="rename" type="button">Endre navn</button></div>
  </div></div>
 </main>
 <div class="toast" id="toast" role="status" hidden></div>
 
+<script src="/vakter.js"></script>
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/betting',PKEY='forsinkelseslogg:profil',CKEY='forsinkelseslogg:kode';
@@ -385,7 +408,47 @@ const showTab=()=>{['yn','min'].forEach(t=>{const on=t===tab,b=$(t==='yn'?'tabYn
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;ls.set('forsinkelseslogg:fane',tab);showTab()});
 showTab();
 // Settings (profile and notifications) open from the gear in the top left corner.
-function openSettings(){$('sheet').hidden=false}
+// Turnus: one dropdown per day for the chosen month (next month by default). Saved days override
+// the built-in schedule in vakter.js; a day set back to the built-in value drops its override.
+const TCODES=['','D','DPOL1','DPOL3','DPOL5','FAGD','A1','A2'];
+let tMon=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,1)})(),tEdit={};
+const tIso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+let tPick='D';
+TCODES.forEach(c=>{const b=el('button',null,c||'Fri');b.type='button';b.dataset.c=c;b.onclick=()=>{tPick=c;pal()};$('tPal').appendChild(b)});
+const pal=()=>$('tPal').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===tPick));
+pal();
+function turnus(){
+ $('tMon').textContent=tMon.toLocaleDateString('nb-NO',{month:'long',year:'numeric'});
+ const box=$('tDays'),now=tIso(new Date());box.replaceChildren(...['man','tir','ons','tor','fre','lør','søn'].map(n=>el('small',null,n)));
+ for(let i=(tMon.getDay()+6)%7;i>0;i--)box.appendChild(el('span'));
+ for(let d=new Date(tMon);d.getMonth()===tMon.getMonth();d.setDate(d.getDate()+1)){
+  const k=tIso(d),v=k in tEdit?tEdit[k]:vaktKode(k),b=el('button',(v?'on':'')+(v!==vaktKode(k)?' chg':'')+(k===now?' today':''));
+  b.type='button';b.append(el('span',null,d.getDate()),el('b',null,v||'·'));
+  b.setAttribute('aria-label',d.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'})+': '+(v||'fri'));
+  b.onclick=()=>{tEdit[k]=(k in tEdit?tEdit[k]:vaktKode(k))===tPick&&tPick?'':tPick;turnus()};
+  box.appendChild(b);
+ }
+ $('tSave').disabled=!Object.keys(tEdit).some(x=>tEdit[x]!==vaktKode(x));
+}
+$('tPrev').onclick=()=>{tMon=new Date(tMon.getFullYear(),tMon.getMonth()-1,1);turnus()};
+$('tNext').onclick=()=>{tMon=new Date(tMon.getFullYear(),tMon.getMonth()+1,1);turnus()};
+$('tSave').onclick=async()=>{
+ const days={};
+ for(const[k,v]of Object.entries(tEdit)){if(v===vaktKode(k))continue;days[k]=v===(VAKTER[k]||'')?'':(v||'FRI')}
+ if(!Object.keys(days).length)return;
+ $('tSave').disabled=true;$('tMsg').textContent='Lagrer …';
+ try{
+  const send=()=>fetch('/api/vakter',{method:'PUT',headers:Object.assign({'content-type':'application/json'},code?{'x-skrivekode':code}:{}),body:JSON.stringify({days})});
+  let r=await send();
+  while(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(!c)throw new Error('Trenger skrivekode.');code=c.trim();ls.set(CKEY,code);r=await send()}
+  if(!r.ok)throw new Error('Kunne ikke lagre.');
+  VAKTPLAN=(await r.json()).plan||{};tEdit={};
+  try{const w=window.parent.document.getElementById('f0').contentWindow;w.VAKTPLAN=VAKTPLAN;w.vakt&&w.vakt()}catch(e){}
+  $('tMsg').textContent='Lagret '+Object.keys(days).length+(Object.keys(days).length===1?' dag.':' dager.');
+ }catch(e){$('tMsg').textContent=e.message||'Kunne ikke lagre.'}
+ turnus();
+};
+function openSettings(){$('sheet').hidden=false;lastVakter().then(turnus)}
 const closeSettings=()=>{$('sheet').hidden=true};
 window.openSettings=openSettings;
 $('gear').onclick=openSettings;$('sheetX').onclick=closeSettings;

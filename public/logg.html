@@ -266,6 +266,7 @@ async function load(){
   const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw 0;
   rawE=(await r.json()).entries||[];
   try{const l=await fetch('/api/lunsj',{cache:'no-store'});if(l.ok)rawL=(await l.json()).entries||[]}catch(e){}
+  if(window.lastVakter)await lastVakter();
   $('stat').textContent='Delt liste: oppdateres automatisk for alle med lenken.';
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
  render();

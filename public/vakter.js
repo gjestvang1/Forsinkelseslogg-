@@ -19,7 +19,21 @@ window.VAKTER = {
   "2027-01-01": "A2", "2027-01-02": "A2", "2027-01-03": "D", "2027-01-05": "D", "2027-01-06": "D",
   "2027-01-07": "A2", "2027-01-08": "D",
 };
+// Vakter lagt inn under Innstillinger (/api/vakter) overstyrer lista over. "FRI" = fri.
+window.VAKTPLAN = window.VAKTPLAN || {};
+window.vaktKode = (date) => {
+  const o = window.VAKTPLAN[date];
+  if (o) return o === "FRI" ? "" : o;
+  return window.VAKTER[date] || "";
+};
 window.vaktFor = (date) => {
-  const k = window.VAKTER[date], t = k && window.VAKTKODER[k];
+  const k = window.vaktKode(date), t = k && window.VAKTKODER[k];
   return t ? { kode: k, start: t[0], slutt: t[1] } : null;
+};
+window.lastVakter = async () => {
+  try {
+    const r = await fetch("/api/vakter", { cache: "no-store" });
+    if (r.ok) window.VAKTPLAN = (await r.json()).plan || {};
+  } catch (e) {}
+  return window.VAKTPLAN;
 };
