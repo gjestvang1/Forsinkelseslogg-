@@ -17,14 +17,17 @@ html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 :root{--bg:#0E3B2E;--cap:#17604A;color-scheme:dark}
 .jul{--cap:#8A1C26}
 [hidden]{display:none!important}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--felt-lo-shell,#0B2F25);overscroll-behavior:none}
+/* No overflow:hidden on html/body: on iOS that clips everything at the (sometimes too short)
+   viewport, which left an empty band above the home indicator. The shell only has fixed
+   children, so there is nothing to scroll anyway. */
+html,body{margin:0;height:100%;height:100lvh;background:var(--felt-lo-shell,#0B2F25);overscroll-behavior:none}
 .jul body,.jul{--felt-lo-shell:#3E0A10}
 /* The pages sit below the status bar / Dynamic Island. --sat is env() or a measured fallback. */
 :root{--sat:env(safe-area-inset-top,0px)}
 #cap{position:fixed;left:0;right:0;top:0;height:var(--sat);background:var(--cap);z-index:4}
 /* Height is set from JS (--vh) so the pages reach the very bottom of the screen, also behind the
    home indicator, even when iOS reports a viewport that is shorter than the screen. */
-#view{position:fixed;left:0;right:0;top:var(--sat);height:calc(var(--vh,100vh) - var(--sat));overflow:hidden}
+#view{position:fixed;left:0;right:0;top:var(--sat);height:calc(var(--vh,100vh) - var(--sat));height:max(calc(var(--vh,100vh) - var(--sat)),calc(100lvh - var(--sat)),calc(100% + env(safe-area-inset-bottom,0px)));overflow:hidden}
 #track{display:flex;width:300%;height:100%;will-change:transform;transform:translate3d(0,0,0)}
 #track.anim{transition:transform .32s cubic-bezier(.22,.61,.36,1)}
 #lights{position:fixed;left:0;right:0;top:var(--sat);height:16px;z-index:6;pointer-events:none;display:flex;justify-content:space-around}
