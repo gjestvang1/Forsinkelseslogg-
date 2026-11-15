@@ -126,6 +126,9 @@ main{position:relative}
 .betCard [role=tabpanel]{display:grid;gap:12px}
 .betCard .tabs{margin-bottom:2px}
 .betCard h3{margin:0}
+.quickd{display:flex;gap:6px;flex-wrap:wrap}
+.quickd button{flex:1;min-width:0;font:inherit;font-weight:600;font-size:.95rem;min-height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:var(--ink);cursor:pointer}
+.quickd button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--felt-lo,#0B2F25)}
 </style>
 <link rel="stylesheet" href="/theme.css">
 </head>
@@ -144,7 +147,8 @@ main{position:relative}
 
  <h2>Velg dag</h2>
  <div class="card">
-  <label>Dato<input type="date" id="date"></label>
+  <div class="quickd" id="quickd" role="group" aria-label="Hurtigvalg dato"></div>
+  <label>Eller velg dato<input type="date" id="date"></label>
   <p class="status" id="status"></p>
   <div class="seg" id="settleRow" hidden><button class="ghost" id="late" type="button">Hun kom for sent</button><button class="ghost" id="onTime" type="button">Hun kom i tide</button></div>
   <button class="link" id="reopen" type="button" hidden>Angre «i tide» og åpne dagen igjen</button>
@@ -276,6 +280,15 @@ $('toast').onclick=()=>{$('toast').hidden=true};
 const run=async(fn,err)=>{if(err)$(err).textContent='';try{await fn();await load()}catch(x){if(err)$(err).textContent=x.message;else alert(x.message)}};
 
 $('date').addEventListener('change',()=>{side=null;render()});
+// Quick dates: today, tomorrow, and Monday when tomorrow is a weekend day.
+const addDays=(d,n)=>{const[y,m,dd]=d.split('-').map(Number),x=new Date(Date.UTC(y,m-1,dd+n));return x.toISOString().slice(0,10)};
+function quickDates(){
+ const box=$('quickd');if(!today)return;
+ const tm=addDays(today,1),wd=new Date(tm+'T12:00:00Z').getUTCDay(),opts=[['I dag',today],['I morgen',tm]];
+ if(wd===6||wd===0)opts.push(['Mandag',addDays(tm,wd===6?2:1)]);
+ const cur=$('date').value;box.replaceChildren();
+ opts.forEach(([t,d])=>{const b=el('button',null,t);b.type='button';b.setAttribute('aria-pressed',cur===d);b.onclick=()=>{$('date').value=d;side=null;render()};box.appendChild(b)});
+}
 $('ja').onclick=()=>{side=true;render()};
 $('nei').onclick=()=>{side=false;render()};
 $('setDef').onclick=()=>{def=me;ls.set(PKEY,me);render();if(pushOn)savePush()};
@@ -402,6 +415,7 @@ function render(){
  $('setSum').textContent=name(me)+(def&&me!==def?' (ikke standard på denne enheten)':'');
  $('setDef').hidden=me===def;
 
+ quickDates();
  const d=$('date').value,res=data.results[d],bets=data.bets.filter(b=>b.date===d);
  const yn=bets.filter(b=>b.type==='yn'),mn=bets.filter(b=>b.type==='min');
  const myYn=yn.find(b=>b.profile===me),myMin=mn.find(b=>b.profile===me);
