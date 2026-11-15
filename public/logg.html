@@ -71,7 +71,8 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .bar .stk i.lu{background:var(--lunch)}
 .seg{display:flex;gap:6px;margin:0 0 14px}
 .seg.per{margin-top:-6px}
-.seg.per button{font-size:.8rem;min-height:34px;padding:5px 4px}
+.seg.per{gap:4px}
+.seg.per button{font-size:.76rem;min-height:34px;padding:5px 2px;white-space:nowrap}
 .chartHead{display:flex;align-items:center;gap:8px;margin:20px 0 10px}
 .chartHead h3{margin:0;flex:1}
 .chartHead h3 small{display:block;font-weight:400;font-size:.8rem;color:var(--mute)}
@@ -149,7 +150,7 @@ main{position:relative}
 
  <details class="fold" id="fStat"><summary>Statistikk <small id="statSum"></small></summary><div class="foldBody">
  <div class="seg" id="filt" role="group" aria-label="Vis"><button type="button" data-f="alt">Alt</button><button type="button" data-f="sent">Forsinkelser</button><button type="button" data-f="lunsj">Lunsj</button></div>
- <div class="seg per" id="per" role="group" aria-label="Periode"><button type="button" data-p="7">Uke</button><button type="button" data-p="30">30 dager</button><button type="button" data-p="365">År</button><button type="button" data-p="all">All time</button></div>
+ <div class="seg per" id="per" role="group" aria-label="Periode"><button type="button" data-p="7">Uke</button><button type="button" data-p="30">30 dager</button><button type="button" data-p="84">12 uker</button><button type="button" data-p="365">År</button><button type="button" data-p="all">All time</button></div>
  <section class="stats">
    <div><b id="m30">0 min</b><span id="perLbl">Siste 30 dager</span></div>
    <div><b id="y1">0</b><span>Registreringer</span></div>
@@ -288,9 +289,9 @@ function render(){
  const pickF=filt==='sent'?entries:filt==='lunsj'?lunch:entries.concat(lunch);
  // Chosen period: last 7 days (today included), last 30 days or last year.
  $('per').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===per));
- const pFrom=new Date(today);if(per==='all')pFrom.setFullYear(1970);else if(per==='365')pFrom.setFullYear(pFrom.getFullYear()-1);else pFrom.setDate(pFrom.getDate()-(per==='7'?6:30));
+ const pFrom=new Date(today);if(per==='all')pFrom.setFullYear(1970);else if(per==='365')pFrom.setFullYear(pFrom.getFullYear()-1);else pFrom.setDate(pFrom.getDate()-(per==='7'?6:per==='84'?83:29));
  const inPer=pickF.filter(e=>tm(e.date)>=pFrom.getTime()&&tm(e.date)<=today.getTime());
- const pName={'7':'Siste uke','30':'Siste 30 dager','365':'Siste år','all':'All time'}[per]||'Siste 30 dager';
+ const pName={'7':'Siste uke','30':'Siste 30 dager','84':'Siste 12 uker','365':'Siste år','all':'All time'}[per]||'Siste 30 dager';
  $('perLbl').textContent=pName;
  $('m30').textContent=fmt(sum(inPer));
  $('statSum').textContent=pName+': '+$('m30').textContent+(filt==='lunsj'?' lunsj':filt==='alt'&&lunch.length?' totalt':'');
@@ -380,11 +381,17 @@ function agg(from,to){ // inclusive ISO dates
 function chart(){
  const today=new Date();today.setHours(0,0,0,0);
  const wk=monday(today),top=drill[drill.length-1];
- const view=top||(per==='7'?{t:'w',mon:wk.getTime(),base:1}:per==='30'?{t:'W'}:{t:'M',all:per==='all'});
+ const view=top||(per==='7'?{t:'w',mon:wk.getTime(),base:1}:per==='30'?{t:'D'}:per==='84'?{t:'W'}:{t:'M',all:per==='all'});
  $('cBack').hidden=!top;
- $('cBack').textContent='‹ '+(drill.length>1?'Tilbake':{'7':'Uke','30':'12 uker','365':'12 mnd','all':'All time'}[per]);
+ $('cBack').textContent='‹ '+(drill.length>1?'Tilbake':{'7':'Uke','30':'30 dager','84':'12 uker','365':'12 mnd','all':'All time'}[per]);
  $('cNav').hidden=view.t!=='w';
  if(view.t==='w')return weekChart(new Date(view.mon),wk);
+ if(view.t==='D'){
+  const items=[];
+  for(let i=29;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const k=iso(d);
+   items.push({...agg(k,k),lab:d.getDay()===1?d.getDate()+'.'+(d.getMonth()+1):'',keep:1,now:i===0,go:{t:'w',mon:monday(d).getTime()},tip:d.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short'})})}
+  return draw(items,'Siste 30 dager','dag','Én stolpe per dag. Datoene under er mandager. Trykk på en dag for å se uka.');
+ }
  if(view.t==='W'){
   const items=[];
   for(let i=11;i>=0;i--){const d=new Date(wk);d.setDate(d.getDate()-7*i);const e=new Date(d);e.setDate(e.getDate()+6);
@@ -426,7 +433,7 @@ function draw(items,title,avgUnit,note,cls){
   if(sh&&r.s){const i=document.createElement('i');i.style.height=(r.s/tot*100)+'%';stk.appendChild(i)}
   if(lh&&r.l){const i=el('i','lu');i.style.height=(r.l/tot*100)+'%';stk.appendChild(i)}
   if(tot&&items.length<=14){const v=el('span',null,items.length>7&&tot>=60?(Math.round(tot/6)/10+'t').replace('.',','):fmt(tot).replace(' min','m'));v.style.bottom=h+'%';b.append(v)}
-  b.append(stk);C.appendChild(b);Lb.appendChild(el('span',r.now?'now':null,items.length>14&&!/^(jan|apr|jul|okt)$/.test(r.lab)?'':r.lab));
+  b.append(stk);C.appendChild(b);Lb.appendChild(el('span',r.now?'now':null,items.length>14&&!r.keep&&!/^(jan|apr|jul|okt)$/.test(r.lab)?'':r.lab));
  });
  if(avg>0){const a=el('div','avgl');a.style.bottom=(avg/max*82)+'%';C.appendChild(a)}
  $('chartT').replaceChildren(title);
