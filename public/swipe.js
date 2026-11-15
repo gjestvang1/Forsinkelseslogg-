@@ -6,7 +6,10 @@
   let pager = null;
   try { if (window.parent !== window) pager = window.parent.pager; } catch (e) {}
   if (!pager) { location.replace(me > 0 ? "/" + hash : "/"); return; } // opened directly: load the shell
-  document.documentElement.classList.add("embedded"); // the shell already clears the status bar
+  document.documentElement.classList.add("embedded");
+  // The page runs up behind the status bar; pad its content by the status bar height measured in the shell.
+  const sat = () => { try { const c = window.parent.document.getElementById("cap"); document.documentElement.style.setProperty("--sat-in", (c ? c.offsetHeight : 0) + "px"); } catch (e) {} };
+  sat(); addEventListener("resize", sat); setTimeout(sat, 500);
   document.querySelectorAll("nav a[data-page]").forEach((a) =>
     a.addEventListener("click", (e) => { e.preventDefault(); pager.go(+a.dataset.page); }));
   // The gear opens the settings, which live on the betting page.
