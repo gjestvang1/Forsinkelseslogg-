@@ -17,11 +17,14 @@ html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 :root{--bg:#0E3B2E;--cap:#17604A;color-scheme:dark}
 .jul{--cap:#8A1C26}
 [hidden]{display:none!important}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);overscroll-behavior:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--felt-lo-shell,#0B2F25);overscroll-behavior:none}
+.jul body,.jul{--felt-lo-shell:#3E0A10}
 /* The pages sit below the status bar / Dynamic Island. --sat is env() or a measured fallback. */
 :root{--sat:env(safe-area-inset-top,0px)}
 #cap{position:fixed;left:0;right:0;top:0;height:var(--sat);background:var(--cap);z-index:4}
-#view{position:fixed;left:0;right:0;bottom:0;top:var(--sat);overflow:hidden}
+/* Height is set from JS (--vh) so the pages reach the very bottom of the screen, also behind the
+   home indicator, even when iOS reports a viewport that is shorter than the screen. */
+#view{position:fixed;left:0;right:0;top:var(--sat);height:calc(var(--vh,100vh) - var(--sat));overflow:hidden}
 #track{display:flex;width:300%;height:100%;will-change:transform;transform:translate3d(0,0,0)}
 #track.anim{transition:transform .32s cubic-bezier(.22,.61,.36,1)}
 #lights{position:fixed;left:0;right:0;top:var(--sat);height:16px;z-index:6;pointer-events:none;display:flex;justify-content:space-around}
@@ -55,6 +58,13 @@ iframe{width:33.3334%;height:100%;border:0;display:block;background:var(--bg)}
   const h=Math.max(screen.height,screen.width);
   document.documentElement.style.setProperty('--sat',(h>=852?59:h>=812?47:20)+'px');
  }
+ // Full screen height: the Home Screen app on iPhone always fills the whole screen.
+ const fit=()=>{
+  const land=innerWidth>innerHeight,full=land?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height);
+  const h=Math.max(innerHeight,document.documentElement.clientHeight,ios&&standalone?full:0);
+  document.documentElement.style.setProperty('--vh',h+'px');
+ };
+ fit();addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,300));
 })();
 </script>
 <script>
