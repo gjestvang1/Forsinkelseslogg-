@@ -71,6 +71,13 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .bar .stk i.lu{background:var(--lunch)}
 .seg{display:flex;gap:6px;margin:0 0 14px}
 .seg.kind{margin:0}
+.vakt{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.18)}
+.vakt .code{min-width:52px;height:52px;padding:0 6px;border-radius:10px;background:#F6EBD0;color:#0B2F25;display:grid;place-items:center;font-weight:900;font-size:1.05rem;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.vakt .t{flex:1;line-height:1.25}.vakt .t small{color:var(--mute);display:block;font-size:.8rem}.vakt .t b{font-size:1.05rem}
+.nowbtn{width:100%;min-height:54px;border-radius:999px;border:0;background:var(--accent);color:#0B2F25;font-weight:800;font-size:1.05rem;cursor:pointer}
+.nowbtn small{display:block;font-weight:600;font-size:.78rem;opacity:.8}
+.vaktok{margin:0;color:var(--good);font-size:.9rem;text-align:center}
+#vaktBox{display:grid;gap:10px}#vaktBox[hidden]{display:none}
 .hint{margin:0;color:var(--mute);font-size:.82rem}
 .chips .chip{min-height:44px;padding:8px 14px;font-size:1rem}
 .outbox{margin:0;font-size:.85rem;color:var(--accent)}
@@ -161,6 +168,11 @@ main{position:relative}
  <h2>Ny registrering</h2>
  <div class="add">
   <div class="seg kind" id="kind" role="group" aria-label="Type"><button type="button" data-k="sent">Forsinkelse</button><button type="button" data-k="lunsj">Ekstra lunsj</button></div>
+  <div id="vaktBox" hidden>
+   <div class="vakt"><div class="code" id="vCode"></div><div class="t"><small id="vLbl">Dagens vakt</small><b id="vStart"></b><small id="vTid"></small></div></div>
+   <button type="button" class="nowbtn" id="vNow" hidden></button>
+   <p class="vaktok" id="vOk" hidden></p>
+  </div>
   <p class="hint" id="hint">Trykk på minuttene for å lagre for valgt dato.</p>
   <div class="chips" id="chips"></div>
   <div class="row">
@@ -206,6 +218,7 @@ main{position:relative}
 <script>{const d=document.getElementById('fStat'),k='forsinkelseslogg:fold:fStat';try{if(localStorage.getItem(k)==='1')d.open=true}catch(e){}d.addEventListener('toggle',()=>{try{localStorage.setItem(k,d.open?'1':'0')}catch(e){}})}</script>
 
 <script src="/reg.js"></script>
+<script src="/vakter.js"></script>
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/entries';
@@ -235,7 +248,7 @@ function quick(min){
 function setKind(k){
  kind=k;$('kind').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
  $('min').max=k==='lunsj'?300:600;$('note').placeholder=k==='lunsj'?'f.eks. «Lang kø i kantina»':'f.eks. «Bussen gikk visst»';
- checkDup();
+ checkDup();vakt();
 }
 $('kind').querySelectorAll('button').forEach(b=>b.onclick=()=>setKind(b.dataset.k));
 $('date').value=iso(new Date());
@@ -288,6 +301,30 @@ function checkDup(){
  box.textContent=(kind==='lunsj'?'Lunsj allerede registrert for ':'Allerede registrert for ')+label+': '+hit.map(e=>fmt(e.min)).join(', ')+'.';
  box.hidden=false;$('save').textContent='Legg til likevel';
 }
+// Dagens vakt (public/vakter.js): viser oppmøtetid, og etter oppmøte en knapp som lagrer
+// minuttene fra vaktstart til nå. Ingenting vises på fridager og fraværsdager.
+const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
+let nowMin=0;
+function vakt(){
+ const d=$('date').value,v=kind==='sent'&&d&&window.vaktFor?vaktFor(d):null,box=$('vaktBox');
+ if(!v){box.hidden=true;$('hint').textContent='Trykk på minuttene for å lagre for valgt dato.';return}
+ const today=d===iso(new Date());
+ box.hidden=false;
+ $('vCode').textContent=v.kode;
+ $('vLbl').textContent=today?'Dagens vakt':'Vakt '+parse(d).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short'});
+ $('vStart').textContent='Oppmøte '+v.start;$('vTid').textContent=v.start+'–'+v.slutt;
+ const n=new Date(),cur=n.getHours()*60+n.getMinutes(),late=cur-toMin(v.start);
+ const done=entries.some(e=>e.date===d);
+ nowMin=today&&!done&&late>0&&cur<toMin(v.slutt)?late:0;
+ $('vNow').hidden=!nowMin;
+ if(nowMin)$('vNow').replaceChildren('Hun kom nå ('+pad(n.getHours())+':'+pad(n.getMinutes())+') · '+fmt(nowMin),el('small',null,'Trykk for å lagre'));
+ $('vOk').hidden=!(today&&!done&&late<=0);
+ $('vOk').textContent='Vakta starter '+v.start+'. Ikke for sent ennå.';
+ $('hint').textContent=nowMin?'Eller trykk på minuttene for å lagre for valgt dato.':'Trykk på minuttene for å lagre for valgt dato.';
+}
+$('vNow').onclick=()=>{if(nowMin){const m=nowMin;nowMin=0;quick(m);vakt()}};
+setInterval(()=>{if(!document.hidden)vakt()},20000);
+$('date').addEventListener('change',vakt);
 $('date').addEventListener('change',checkDup);
 $('save').onclick=add;
 ['min','note'].forEach(i=>$(i).addEventListener('keydown',e=>{if(e.key==='Enter')add()}));
@@ -301,7 +338,7 @@ $('cPrev').onclick=()=>stepWeek(-1);$('cNext').onclick=()=>stepWeek(1);
 $('filt').querySelectorAll('button').forEach(b=>b.onclick=()=>{filt=b.dataset.f;try{localStorage.setItem('forsinkelseslogg:filter',filt)}catch(e){}render()});
 function render(){
  entries=reg.view('sent',rawE);lunch=reg.view('lunsj',rawL);
- checkDup();
+ checkDup();vakt();
  const ob=$('outbox');ob.hidden=!(reg.offline&&reg.pending);ob.textContent=reg.offline?'Ingen nett. '+reg.pending+(reg.pending===1?' endring':' endringer')+' lagres når du er på nett igjen.':'';
  $('filt').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===filt));
  const today=new Date();today.setHours(0,0,0,0);
