@@ -107,6 +107,18 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto;fo
 .foldBody h3{font-size:1rem;margin:20px 0 10px}
 .foldBody .stats{margin-top:4px}
 main{position:relative}
+.hint{margin:0;color:var(--mute);font-size:.82rem}
+.chips .chip{min-height:44px;padding:8px 14px;font-size:1rem}
+.outbox{margin:0;font-size:.85rem;color:var(--accent)}
+.cnote{color:var(--mute);font-size:.8rem;margin:8px 0 0}
+.logt{cursor:pointer}
+.log.pend{opacity:.7}
+.pendt{color:var(--accent)!important}
+.editrow{display:grid!important;grid-template-columns:1fr!important;gap:8px;padding:12px 0}
+.editf{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px}
+.editb{display:flex;gap:8px;justify-content:flex-end}
+.editb button{padding:10px 18px;min-height:44px}
+.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
 </style>
 <link rel="stylesheet" href="/theme.css">
 </head>
@@ -124,15 +136,17 @@ main{position:relative}
 
  <h2>Ny lunsj</h2>
  <div class="add">
+  <p class="hint">Trykk på minuttene for å lagre for valgt dato.</p>
+  <div class="chips" id="chips"></div>
   <div class="row">
    <label>Dato<input type="date" id="date"></label>
-   <label>Minutter ekstra<input type="number" id="min" min="1" max="300" inputmode="numeric" placeholder="f.eks. 15"></label>
+   <label>Annet antall minutter<input type="number" id="min" min="1" max="300" inputmode="numeric" placeholder="f.eks. 15"></label>
   </div>
-  <div class="chips" id="chips"></div>
   <label>Notat (valgfritt)<input type="text" id="note" maxlength="80" placeholder="f.eks. «Lang kø i kantina»"></label>
   <p class="dup" id="dup" role="status" hidden></p>
   <p class="err" id="err" role="alert"></p>
   <button class="go" id="save">Legg til</button>
+  <p class="outbox" id="outbox" role="status" hidden></p>
  </div>
 
  <h2>Oversikt</h2>
@@ -144,14 +158,16 @@ main{position:relative}
 
  <h2>Alle registreringer</h2>
  <div id="log"></div>
+ <p class="cnote">Trykk på en registrering for å endre den.</p>
 
  <p class="note"><span id="stat">Kobler til …</span> Lunsjminuttene telles med i statistikken og grafen på Logg-fanen. Uken starter mandag.</p>
 </main>
 
+<script src="/reg.js"></script>
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/lunsj';
-let entries=[],code='',prevIds=null;
+let raw=[],entries=[],prevIds=null;
 try{code=localStorage.getItem('forsinkelseslogg:kode')||''}catch(e){}
 const saveCode=()=>{try{localStorage.setItem('forsinkelseslogg:kode',code)}catch(e){}};
 const $=id=>document.getElementById(id);
@@ -163,36 +179,22 @@ const fmt=m=>{m=Math.round(m);if(m<60)return m+' min';const h=Math.floor(m/60),r
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const sum=a=>a.reduce((s,e)=>s+e.min,0);
 
-[5,10,15,20,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.onclick=()=>{$('min').value=n;$('min').focus()};$('chips').appendChild(b)});
+// One tap saves right away (with Angre in the toast).
+[5,10,15,20,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.onclick=()=>quick(n);$('chips').appendChild(b)});
+function quick(min){reg.add('lunsj',{date:$('date').value||iso(new Date()),min,note:$('note').value.trim()});$('note').value='';$('err').textContent='';if(window.kasinoMsg)kasinoMsg('lunsj')}
 $('date').value=iso(new Date());
 
-async function api(method,body,q){
- const h={'content-type':'application/json'};if(code)h['x-skrivekode']=code;
- const r=await fetch(API+(q||''),{method,headers:h,body:body?JSON.stringify(body):undefined});
- if(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(c){code=c.trim();saveCode();return api(method,body,q)}throw new Error('kode')}
- if(!r.ok)throw new Error(r.status);
- return r.json();
-}
-async function add(){
+function add(){
  const date=$('date').value,min=parseInt($('min').value,10);
  if(!date){$('err').textContent='Velg en dato.';return}
- if(!(min>=1&&min<=300)){$('err').textContent='Skriv inn antall minutter (1–300).';return}
- $('err').textContent='';$('save').disabled=true;
- let by='';try{by=localStorage.getItem('forsinkelseslogg:profil')||''}catch(e){}
- try{await api('POST',{date,min,note:$('note').value.trim(),by});$('min').value='';$('note').value='';await load();if(window.kasinoMsg)kasinoMsg('lunsj');tellLog()}
- catch(x){$('err').textContent=x.message==='kode'?'Ikke lagret: trenger skrivekode.':'Kunne ikke lagre. Prøv igjen.'}
- $('save').disabled=false;
+ if(!(min>=1&&min<=300)){$('err').textContent='Skriv inn antall minutter (1–300), eller trykk på en av knappene.';return}
+ quick(min);$('min').value='';
 }
-async function remove(id){
- try{await api('DELETE',null,'?id='+encodeURIComponent(id));await load();tellLog()}
- catch(x){$('err').textContent=x.message==='kode'?'Ikke slettet: trenger skrivekode.':'Kunne ikke slette. Prøv igjen.'}
-}
-// The log page shows lunch in its totals and chart, so let it refresh right away.
-function tellLog(){try{const f=parent.document.getElementById('f0');if(f&&f.contentWindow.load)f.contentWindow.load()}catch(e){}}
+reg.on(t=>{if(t==='sent')load();else render()});
 async function load(){
  try{
   const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw 0;
-  entries=(await r.json()).entries||[];
+  raw=(await r.json()).entries||[];
   $('stat').textContent='Delt liste: oppdateres automatisk for alle med lenken.';
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
  render();
@@ -221,7 +223,9 @@ const CONV=[
 ];
 let lastWk=null;
 function render(){
+ entries=reg.view('lunsj',raw);
  checkDup();
+ const ob=$('outbox');ob.hidden=!(reg.offline&&reg.pending);ob.textContent=reg.offline?'Ingen nett. '+reg.pending+(reg.pending===1?' endring':' endringer')+' lagres når du er på nett igjen.':'';
  const today=new Date();today.setHours(0,0,0,0);
  const wk=monday(today).getTime(),tm=d=>parse(d).getTime();
  const w=sum(entries.filter(e=>monday(parse(e.date)).getTime()===wk));
@@ -231,22 +235,14 @@ function render(){
  const d365=new Date(today);d365.setFullYear(d365.getFullYear()-1);
  $('m30').textContent=fmt(sum(entries.filter(e=>tm(e.date)>=d30.getTime()&&tm(e.date)<=today.getTime())));
  $('y1').textContent=fmt(sum(entries.filter(e=>tm(e.date)>=d365.getTime()&&tm(e.date)<=today.getTime())));
- const L=$('log');L.replaceChildren();
- if(!entries.length){$('avg').textContent='0 min';L.appendChild(el('p','empty','Ingen ekstra lunsj registrert ennå.'));return}
+ const L=$('log');const keep=reg.isEditing(document)&&!!document.querySelector('#log .editrow');if(!keep)L.replaceChildren();
+ if(!entries.length){$('avg').textContent='0 min';if(!keep)L.appendChild(el('p','empty','Ingen ekstra lunsj registrert ennå.'));return}
  const sorted=[...entries].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(b.ts||0)-(a.ts||0));
  const first=monday(parse(sorted[sorted.length-1].date)),end=new Date(Math.max(wk,monday(parse(sorted[0].date)).getTime()));
  $('avg').textContent=fmt(sum(entries)/(Math.round((end-first)/(7*864e5))+1));
- const fresh=prevIds?sorted.filter(e=>!prevIds.has(e.id)):[];prevIds=new Set(sorted.map(e=>e.id));
+ const real=sorted.filter(e=>!e.pending),fresh=prevIds?real.filter(e=>!prevIds.has(e.id)):[];prevIds=new Set(real.map(e=>e.id));
  if(fresh.length&&window.fx&&fx.shake)fx.shake($('lwk'));
- sorted.forEach(e=>{
-  const row=el('div',fresh.includes(e)?'log fxnew':'log');
-  const a=el('div',null,parse(e.date).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short',year:'numeric'}));
-  if(e.note)a.appendChild(el('small',null,e.note));
-  const b=el('b',null,'+'+fmt(e.min));
-  const d=el('button','del','Slett');d.type='button';
-  d.onclick=()=>{if(confirm('Slette denne registreringen?'))remove(e.id)};
-  row.append(a,b,d);L.appendChild(row);
- });
+ if(!keep)sorted.forEach(e=>L.appendChild(reg.row(document,e,'lunsj',{plus:true,fresh:fresh.includes(e),done:render})));
 }
 load();
 setInterval(()=>{if(!document.hidden)load()},10000);

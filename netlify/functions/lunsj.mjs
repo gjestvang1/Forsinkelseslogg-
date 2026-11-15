@@ -45,6 +45,22 @@ export default async (req) => {
     return json(rec, 201);
   }
 
+  // Edit an entry: date, minutes and note. No notifications.
+  if (req.method === "PATCH") {
+    const id = new URL(req.url).searchParams.get("id");
+    if (!id || !/^[\w-]{1,40}$/.test(id)) return json({ error: "Mangler id" }, 400);
+    const old = await s.get(id, { type: "json" });
+    if (!old) return json({ error: "Finnes ikke" }, 404);
+    let b;
+    try { b = await req.json(); } catch { return json({ error: "Ugyldig data" }, 400); }
+    const min = parseInt(b.min, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(b.date || "") || !(min >= 1 && min <= 300))
+      return json({ error: "Ugyldig dato eller minutter" }, 400);
+    const rec = { ...old, date: b.date, min, note: String(b.note || "").slice(0, 80), edited: Date.now() };
+    await s.setJSON(id, rec);
+    return json(rec);
+  }
+
   if (req.method === "DELETE") {
     const id = new URL(req.url).searchParams.get("id");
     if (!id || !/^[\w-]{1,40}$/.test(id)) return json({ error: "Mangler id" }, 400);

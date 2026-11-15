@@ -70,6 +70,29 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .bar .stk i:last-child{border-radius:4px 4px 0 0}
 .bar .stk i.lu{background:var(--lunch)}
 .seg{display:flex;gap:6px;margin:0 0 14px}
+.seg.kind{margin:0}
+.hint{margin:0;color:var(--mute);font-size:.82rem}
+.chips .chip{min-height:44px;padding:8px 14px;font-size:1rem}
+.outbox{margin:0;font-size:.85rem;color:var(--accent)}
+.mon{border-bottom:1px solid var(--line)}
+.mon>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:12px 0;font-weight:700}
+.mon>summary::-webkit-details-marker{display:none}
+.mon>summary{flex-wrap:wrap}
+.mon>summary small{font-weight:400;color:var(--mute);font-size:.82rem;flex-basis:100%;padding-left:18px}
+.mon>summary::before{content:"▸";color:var(--accent);margin-right:6px;display:inline-block;transition:transform .15s}
+.mon[open]>summary::before{transform:rotate(90deg)}
+.mon>summary span{flex:1}
+.logt{cursor:pointer}
+.tag{display:inline-block;font-size:.7rem;font-weight:700;border-radius:999px;padding:1px 7px;background:color-mix(in srgb,var(--lunch) 22%,transparent);color:var(--lunch);vertical-align:1px}
+.log b.lu{color:var(--lunch)}
+.log.pend{opacity:.7}
+.pendt{color:var(--accent)!important}
+.editrow{display:grid!important;grid-template-columns:1fr!important;gap:8px;padding:12px 0}
+.editf{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px}
+.editb{display:flex;gap:8px;justify-content:flex-end}
+.editb button{padding:10px 18px;min-height:44px}
+.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.ctip{position:absolute;z-index:3;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:.78rem;font-weight:600;line-height:1.3;border-radius:8px;padding:6px 9px;white-space:nowrap;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 .seg.per{margin-top:-6px}
 .seg.per{gap:4px}
 .seg.per button{font-size:.76rem;min-height:34px;padding:5px 2px;white-space:nowrap}
@@ -135,17 +158,20 @@ main{position:relative}
   <p class="lunchline" id="lunchLine" hidden></p>
  </section>
 
- <h2>Ny forsinkelse</h2>
+ <h2>Ny registrering</h2>
  <div class="add">
+  <div class="seg kind" id="kind" role="group" aria-label="Type"><button type="button" data-k="sent">Forsinkelse</button><button type="button" data-k="lunsj">Ekstra lunsj</button></div>
+  <p class="hint" id="hint">Trykk på minuttene for å lagre for valgt dato.</p>
+  <div class="chips" id="chips"></div>
   <div class="row">
    <label>Dato<input type="date" id="date"></label>
-   <label>Minutter for sent<input type="number" id="min" min="1" max="600" inputmode="numeric" placeholder="f.eks. 12"></label>
+   <label><span id="minLbl">Annet antall minutter</span><input type="number" id="min" min="1" max="600" inputmode="numeric" placeholder="f.eks. 12"></label>
   </div>
-  <div class="chips" id="chips"></div>
   <label>Notat (valgfritt)<input type="text" id="note" maxlength="80" placeholder="f.eks. «Bussen gikk visst»"></label>
   <p class="dup" id="dup" role="status" hidden></p>
   <p class="err" id="err" role="alert"></p>
   <button class="go" id="save">Legg til</button>
+  <p class="outbox" id="outbox" role="status" hidden></p>
  </div>
 
  <details class="fold" id="fStat"><summary>Statistikk <small id="statSum"></small></summary><div class="foldBody">
@@ -170,21 +196,20 @@ main{position:relative}
   <p class="cnote" id="chartNote"></p>
  </div></details>
 
- <h2>Uke for uke</h2>
- <div id="weeks"></div>
- <button class="more" id="moreW" hidden>Vis alle uker</button>
-
- <h2>Alle registreringer</h2>
+ <h2>Historikk</h2>
+ <div class="seg" id="hfilt" role="group" aria-label="Vis i historikken"><button type="button" data-f="alt">Alt</button><button type="button" data-f="sent">Forsinkelser</button><button type="button" data-f="lunsj">Lunsj</button></div>
  <div id="log"></div>
+ <p class="cnote">Trykk på en registrering for å endre den.</p>
 
- <p class="note"><span id="stat">Kobler til …</span> Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med. Ekstra lunsj registreres på Lunsj-fanen og telles med i statistikken når «Alt» eller «Lunsj» er valgt.</p>
+ <p class="note"><span id="stat">Kobler til …</span> Uken starter mandag. «Snitt per uke» regnes fra uken av første registrering, og uker uten forsinkelse teller med. Ekstra lunsj kan registreres her eller på Lunsj-fanen, og telles med i statistikken når «Alt» eller «Lunsj» er valgt.</p>
 </main>
 <script>{const d=document.getElementById('fStat'),k='forsinkelseslogg:fold:fStat';try{if(localStorage.getItem(k)==='1')d.open=true}catch(e){}d.addEventListener('toggle',()=>{try{localStorage.setItem(k,d.open?'1':'0')}catch(e){}})}</script>
 
+<script src="/reg.js"></script>
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/entries';
-let entries=[],lunch=[],code='',filt='alt',per='30';
+let rawE=[],rawL=[],entries=[],lunch=[],code='',filt='alt',per='30',kind='sent',hfilt='alt',openMon=null;
 try{per=localStorage.getItem('forsinkelseslogg:periode')||'30'}catch(e){}
 try{filt=localStorage.getItem('forsinkelseslogg:filter')||'alt'}catch(e){}
 try{code=localStorage.getItem('forsinkelseslogg:kode')||''}catch(e){}
@@ -198,38 +223,36 @@ const isoWeek=d=>{const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDa
 const fmt=m=>{m=Math.round(m);if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return h+' t'+(r?' '+r+' min':'')};
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const sum=a=>a.reduce((s,e)=>s+e.min,0);
-let showAll=false,prevIds=null;
+let prevIds=null,prevAll=null;
 
-[5,10,15,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.onclick=()=>{$('min').value=n;$('min').focus()};$('chips').appendChild(b)});
+// One tap on a chip saves it right away (with Angre in the toast).
+[5,10,15,20,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.onclick=()=>quick(n);$('chips').appendChild(b)});
+function quick(min){
+ const date=$('date').value||iso(new Date());
+ reg.add(kind,{date,min,note:$('note').value.trim()});$('note').value='';$('err').textContent='';
+ if(window.kasinoMsg)kasinoMsg(kind);
+}
+function setKind(k){
+ kind=k;$('kind').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
+ $('min').max=k==='lunsj'?300:600;$('note').placeholder=k==='lunsj'?'f.eks. «Lang kø i kantina»':'f.eks. «Bussen gikk visst»';
+ checkDup();
+}
+$('kind').querySelectorAll('button').forEach(b=>b.onclick=()=>setKind(b.dataset.k));
 $('date').value=iso(new Date());
 
-// Writes send the shared code; on 401 we ask for it and retry once per answer.
-async function api(method,body,q){
- const h={'content-type':'application/json'};if(code)h['x-skrivekode']=code;
- const r=await fetch(API+(q||''),{method,headers:h,body:body?JSON.stringify(body):undefined});
- if(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(c){code=c.trim();saveCode();return api(method,body,q)}throw new Error('kode')}
- if(!r.ok)throw new Error(r.status);
- return r.json();
-}
-async function add(){
- const date=$('date').value,min=parseInt($('min').value,10);
+function add(){
+ const date=$('date').value,min=parseInt($('min').value,10),max=kind==='lunsj'?300:600;
  if(!date){$('err').textContent='Velg en dato.';return}
- if(!(min>=1&&min<=600)){$('err').textContent='Skriv inn antall minutter (1–600).';return}
- $('err').textContent='';$('save').disabled=true;
- try{let by='';try{by=localStorage.getItem('forsinkelseslogg:profil')||''}catch(e){}
- const saved=await api('POST',{date,min,note:$('note').value.trim(),by});$('min').value='';$('note').value='';await load();if(saved&&saved.firstOfYear&&window.nyttAar)nyttAar();else if(window.kasinoMsg)kasinoMsg('sent')}
- catch(x){$('err').textContent=x.message==='kode'?'Ikke lagret: trenger skrivekode.':'Kunne ikke lagre. Prøv igjen.'}
- $('save').disabled=false;
+ if(!(min>=1&&min<=max)){$('err').textContent='Skriv inn antall minutter (1–'+max+'), eller trykk på en av knappene.';return}
+ $('err').textContent='';quick(min);$('min').value='';
 }
-async function remove(id){
- try{await api('DELETE',null,'?id='+encodeURIComponent(id));await load()}
- catch(x){$('err').textContent=x.message==='kode'?'Ikke slettet: trenger skrivekode.':'Kunne ikke slette. Prøv igjen.'}
-}
+reg.onSaved('sent',res=>{if(res&&res.firstOfYear&&window.nyttAar)nyttAar()});
+reg.on(t=>{if(t==='sent')load();else render()});
 async function load(){
  try{
   const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw 0;
-  entries=(await r.json()).entries||[];
-  try{const l=await fetch('/api/lunsj',{cache:'no-store'});if(l.ok)lunch=(await l.json()).entries||[]}catch(e){}
+  rawE=(await r.json()).entries||[];
+  try{const l=await fetch('/api/lunsj',{cache:'no-store'});if(l.ok)rawL=(await l.json()).entries||[]}catch(e){}
   $('stat').textContent='Delt liste: oppdateres automatisk for alle med lenken.';
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
  render();
@@ -259,16 +282,17 @@ function leader(d){
 $('lead').onclick=()=>{try{if(parent.pager)return parent.pager.go(2)}catch(e){}location.href='/#betting'};
 function checkDup(){
  const d=$('date').value,box=$('dup');
- const hit=d?entries.filter(e=>e.date===d):[];
+ const hit=d?(kind==='lunsj'?lunch:entries).filter(e=>e.date===d):[];
  if(!hit.length){box.hidden=true;$('save').textContent='Legg til';return}
  const label=iso(new Date())===d?'i dag':parse(d).toLocaleDateString('nb-NO',{day:'numeric',month:'long'});
- box.textContent='Allerede registrert for '+label+': '+hit.map(e=>fmt(e.min)).join(', ')+'.';
+ box.textContent=(kind==='lunsj'?'Lunsj allerede registrert for ':'Allerede registrert for ')+label+': '+hit.map(e=>fmt(e.min)).join(', ')+'.';
  box.hidden=false;$('save').textContent='Legg til likevel';
 }
 $('date').addEventListener('change',checkDup);
 $('save').onclick=add;
 ['min','note'].forEach(i=>$(i).addEventListener('keydown',e=>{if(e.key==='Enter')add()}));
-$('moreW').onclick=()=>{showAll=!showAll;render()};
+$('hfilt').querySelectorAll('button').forEach(b=>b.onclick=()=>{hfilt=b.dataset.f;try{localStorage.setItem('forsinkelseslogg:hfilter',hfilt)}catch(e){}render()});
+try{hfilt=localStorage.getItem('forsinkelseslogg:hfilter')||'alt'}catch(e){}
 
 $('per').querySelectorAll('button').forEach(b=>b.onclick=()=>{per=b.dataset.p;drill=[];try{localStorage.setItem('forsinkelseslogg:periode',per)}catch(e){}render()});
 $('cBack').onclick=()=>{drill.pop();render()};
@@ -276,7 +300,9 @@ const stepWeek=n=>{const t=drill[drill.length-1],cur=t&&t.t==='w'?t.mon:monday(n
 $('cPrev').onclick=()=>stepWeek(-1);$('cNext').onclick=()=>stepWeek(1);
 $('filt').querySelectorAll('button').forEach(b=>b.onclick=()=>{filt=b.dataset.f;try{localStorage.setItem('forsinkelseslogg:filter',filt)}catch(e){}render()});
 function render(){
+ entries=reg.view('sent',rawE);lunch=reg.view('lunsj',rawL);
  checkDup();
+ const ob=$('outbox');ob.hidden=!(reg.offline&&reg.pending);ob.textContent=reg.offline?'Ingen nett. '+reg.pending+(reg.pending===1?' endring':' endringer')+' lagres når du er på nett igjen.':'';
  $('filt').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===filt));
  const today=new Date();today.setHours(0,0,0,0);
  const wk=monday(today),tm=d=>parse(d).getTime();
@@ -297,12 +323,11 @@ function render(){
  $('statSum').textContent=pName+': '+$('m30').textContent+(filt==='lunsj'?' lunsj':filt==='alt'&&lunch.length?' totalt':'');
  $('y1').textContent=inPer.length;
 
- const W=$('weeks'),L=$('log');W.replaceChildren();L.replaceChildren();
  const both=entries.concat(lunch);
+ {const ids=[...entries,...lunch].filter(e=>!e.pending).map(e=>e.id);window.__freshIds=prevAll?new Set(ids.filter(i=>!prevAll.has(i))):new Set();prevAll=new Set(ids)}
+ history();
  if(!both.length){
-  $('avg').textContent='0 min';$('moreW').hidden=true;
-  W.appendChild(el('p','empty','Ingen registreringer ennå. Legg inn første forsinkelse over.'));
-  L.appendChild(el('p','empty','Tomt her også.'));$('chart').replaceChildren();$('wlab').replaceChildren();['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='');if(window.fun)fun.logg([],[]);return;
+  $('avg').textContent='0 min';$('chart').replaceChildren();$('wlab').replaceChildren();['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='');if(window.fun)fun.logg([],[]);return;
  }
  const sorted=[...entries].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
  const dates=both.map(e=>e.date).sort();
@@ -320,7 +345,6 @@ function render(){
  lunch.forEach(e=>{slot(iso(monday(parse(e.date)))).l+=e.min});
  const rows=[];
  for(let d=new Date(end);d>=first;d.setDate(d.getDate()-7)){const b=by[iso(d)]||{s:0,n:0,l:0};rows.push({d:new Date(d),s:b.s,n:b.n,l:b.l})}
- const max=Math.max(...rows.map(r=>r.s+r.l),1);
  chart();
  if(entries.length){
  // Records: the single worst day and the worst week (all minutes that day/week added up). Late arrivals only.
@@ -333,33 +357,35 @@ function render(){
  stamp('rDay',fresh3&&wd[1]>0,'d'+wd[0]+wd[1]);stamp('rWk',ww.d.getTime()===wk.getTime()&&ww.s>0&&rows.length>1,'w'+iso(ww.d)+ww.s);
  $('rWk').textContent=fmt(ww.s);$('rWkS').textContent='Uke '+isoWeek(ww.d)+', '+ww.d.getFullYear()+' ('+ww.n+(ww.n===1?' gang':' ganger')+')';
  }else{['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='')}
- (showAll?rows:rows.slice(0,8)).forEach(r=>{
-  const row=el('div','wk');
-  const a=el('div',null,'Uke '+isoWeek(r.d));
-  a.appendChild(el('em',null,r.d.toLocaleDateString('nb-NO',{day:'numeric',month:'short'})));
-  const t=el('div','t');
-  if(r.s){const i=document.createElement('i');i.style.width=(r.s/max*100)+'%';t.appendChild(i)}
-  if(r.l){const i=el('i','lu');i.style.width=(r.l/max*100)+'%';t.appendChild(i)}
-  const v=el('div','v',r.s+r.l?fmt(r.s+r.l):'–');
-  v.appendChild(el('em',null,(r.n?r.n+(r.n===1?' gang':' ganger'):'i tide')+(r.l?' · '+fmt(r.l)+' lunsj':'')));
-  row.append(a,t,v);W.appendChild(row);
- });
- $('moreW').hidden=rows.length<=8;
- $('moreW').textContent=showAll?'Vis færre uker':'Vis alle '+rows.length+' uker';
-
  // New entries since the last load: shake the big number, slide the row in.
  const fresh=prevIds?sorted.filter(e=>!prevIds.has(e.id)):[];prevIds=new Set(sorted.map(e=>e.id));
  if(fresh.length&&window.fx)fx.shake($('wk'));
  if(window.fun)fun.logg(sorted,fresh);
- if(!sorted.length)L.appendChild(el('p','empty','Ingen forsinkelser ennå.'));
- sorted.forEach(e=>{
-  const row=el('div',fresh.includes(e)?'log fxnew':'log');
-  const a=el('div',null,parse(e.date).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short',year:'numeric'}));
-  if(e.note)a.appendChild(el('small',null,e.note));
-  const b=el('b',null,fmt(e.min));
-  const d=el('button','del','Slett');d.type='button';
-  d.onclick=()=>{if(confirm('Slette denne registreringen?'))remove(e.id)};
-  row.append(a,b,d);L.appendChild(row);
+}
+// History: one list grouped by month, newest first, filtered Alt / Forsinkelser / Lunsj.
+function history(){
+ $('hfilt').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===hfilt));
+ if(reg.isEditing(document)&&document.querySelector('#log .editrow'))return; // keep an open edit form as it is
+ const L=$('log');L.replaceChildren();
+ const all=[...(hfilt==='lunsj'?[]:entries.map(e=>({e,k:'sent'}))),...(hfilt==='sent'?[]:lunch.map(e=>({e,k:'lunsj'})))]
+  .sort((a,b)=>a.e.date<b.e.date?1:a.e.date>b.e.date?-1:(b.e.ts||0)-(a.e.ts||0));
+ if(!all.length){L.appendChild(el('p','empty','Ingen registreringer ennå. Trykk på minuttene over for å legge inn den første.'));return}
+ const groups=[];
+ for(const x of all){const m=x.e.date.slice(0,7);let g=groups[groups.length-1];if(!g||g.m!==m){g={m,items:[]};groups.push(g)}g.items.push(x)}
+ if(!openMon)openMon=new Set(groups.slice(0,2).map(g=>g.m));
+ const freshIds=window.__freshIds||new Set();
+ groups.forEach(g=>{
+  const d=el('details','mon');d.open=openMon.has(g.m);
+  d.addEventListener('toggle',()=>{d.open?openMon.add(g.m):openMon.delete(g.m)});
+  const s=el('summary'),[y,mo]=g.m.split('-').map(Number),name=new Date(y,mo-1,1).toLocaleDateString('nb-NO',{month:'long',year:'numeric'});
+  const late=g.items.filter(x=>x.k==='sent'),lu=g.items.filter(x=>x.k==='lunsj');
+  const parts=[];
+  if(late.length)parts.push(fmt(sum(late.map(x=>x.e)))+' sent, '+late.length+(late.length===1?' gang':' ganger'));
+  if(lu.length)parts.push(fmt(sum(lu.map(x=>x.e)))+' lunsj');
+  s.append(el('span',null,name.charAt(0).toUpperCase()+name.slice(1)),el('small',null,parts.join(' · ')));
+  d.appendChild(s);
+  g.items.forEach(x=>d.appendChild(reg.row(document,x.e,x.k,{tag:x.k==='lunsj'?'Lunsj':'',plus:x.k==='lunsj',fresh:freshIds.has(x.e.id),done:render})));
+  L.appendChild(d);
  });
 }
 function stamp(id,on,key){
@@ -427,7 +453,13 @@ function draw(items,title,avgUnit,note,cls){
  const max=Math.max(...items.map(val),avg,items.length===7?15:1);
  items.forEach(r=>{
   const tot=val(r),b=el('div','bar'+(tot?'':' zero')+(r.now?' now':''));
-  if(r.go){b.onclick=()=>{drill.push(r.go);render()};b.title=r.tip||''}
+  // Tap drills in; press and hold shows the exact numbers.
+  let ht=0,held=false;
+  b.addEventListener('pointerdown',()=>{held=false;clearTimeout(ht);ht=setTimeout(()=>{held=true;tip(b,r,sh,lh)},420)});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>clearTimeout(ht)));
+  b.addEventListener('contextmenu',e=>e.preventDefault());
+  b.onclick=()=>{if(held){held=false;return}if(r.go){drill.push(r.go);render()}};
+  if(matchMedia('(hover:hover)').matches){b.addEventListener('mouseenter',()=>tip(b,r,sh,lh));b.addEventListener('mouseleave',hideTip)}
   const h=tot/max*82,stk=el('div','stk');stk.style.height=h+'%';
   if(!tot)stk.appendChild(document.createElement('i'));
   if(sh&&r.s){const i=document.createElement('i');i.style.height=(r.s/tot*100)+'%';stk.appendChild(i)}
@@ -440,10 +472,24 @@ function draw(items,title,avgUnit,note,cls){
  $('legend').hidden=filt!=='alt';
  $('chartNote').textContent=(avg>0?'Stiplet linje: snitt per '+avgUnit+' ('+fmt(avg)+'). ':'')+note;
 }
+let tipEl=null,tipT=0;
+function hideTip(){if(tipEl){tipEl.remove();tipEl=null}}
+function tip(b,r,sh,lh){
+ hideTip();clearTimeout(tipT);
+ const parts=[];if(sh&&r.s)parts.push(fmt(r.s)+' forsinket');if(lh&&r.l)parts.push(fmt(r.l)+' lunsj');
+ const tot=(sh?r.s:0)+(lh?r.l:0);
+ const C=$('chart'),t=el('div','ctip',(r.tip||r.lab)+': '+(parts.length?parts.join(' + ')+(parts.length>1?' = '+fmt(tot):''):'ingenting registrert'));
+ C.appendChild(t);tipEl=t;
+ const cr=C.getBoundingClientRect(),br=b.getBoundingClientRect(),w=t.offsetWidth;
+ let x=br.left-cr.left+br.width/2;x=Math.max(w/2,Math.min(cr.width-w/2,x));
+ t.style.left=x+'px';t.style.top='-6px';
+ tipT=setTimeout(hideTip,2500);
+}
+document.addEventListener('pointerdown',e=>{if(tipEl&&!e.target.closest('.bar'))hideTip()});
 // One week, day by day (Monday to Sunday).
 function weekChart(mon,wk){
  const DN=['man','tir','ons','tor','fre','lør','søn'],todayIso=iso(new Date());
- const items=DN.map((n,i)=>{const d=new Date(mon);d.setDate(d.getDate()+i);const k=iso(d);return {...agg(k,k),lab:n,now:k===todayIso}});
+ const items=DN.map((n,i)=>{const d=new Date(mon);d.setDate(d.getDate()+i);const k=iso(d);return {...agg(k,k),lab:n,now:k===todayIso,tip:d.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short'})}});
  const sun=new Date(mon);sun.setDate(sun.getDate()+6);
  const sh=filt!=='lunsj',lh=filt!=='sent',wt=items.reduce((a,r)=>a+(sh?r.s:0)+(lh?r.l:0),0);
  draw(items,'',null,wt?'Totalt denne uka: '+fmt(wt)+'.':'Ingen minutter registrert denne uka.');
@@ -451,6 +497,7 @@ function weekChart(mon,wk){
  $('chartT').replaceChildren('Uke '+isoWeek(mon),el('small',null,mon.getDate()+'.'+(mon.getMonth()===sun.getMonth()?'':' '+mo(mon))+'–'+sun.getDate()+'. '+mo(sun)));
  $('cNext').disabled=mon.getTime()>=wk.getTime();
 }
+setKind('sent');
 load();
 setInterval(()=>{if(!document.hidden)load()},10000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
