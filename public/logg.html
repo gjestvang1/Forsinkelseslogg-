@@ -243,9 +243,11 @@ let prevIds=null,prevAll=null;
 // One tap on a chip saves it right away (with Angre in the toast).
 [5,10,15,20,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.onclick=()=>quick(n);$('chips').appendChild(b)});
 // «Nå»: registers today's lateness right as she walks in, counted from today's shift start
-// (vakter.js / Innstillinger → Turnus), or 07:30 when no shift is planned.
+// (vakter.js / Innstillinger → Turnus). With no shift planned it guesses from the clock:
+// 12:00–13:00 → A1 (12:00), from 13:00 → A2 (13:00), otherwise 07:30.
 {const b=el('button','chip naa','Nå');b.type='button';b.id='naa';b.onclick=()=>{
- const n=new Date(),v=window.vaktFor?vaktFor(iso(n)):null,start=v?v.start:'07:30';
+ const n=new Date(),v=window.vaktFor?vaktFor(iso(n)):null,hh=n.getHours();
+ const start=v?v.start:hh>=13?'13:00':hh>=12?'12:00':'07:30';
  const [h,m]=start.split(':').map(Number),late=n.getHours()*60+n.getMinutes()-(h*60+m);
  if(late<=0){$('err').textContent='Ikke for sent: oppmøte er '+start+'.';return}
  if(late>600){$('err').textContent='Over 10 timer siden oppmøte ('+start+'). Skriv inn minuttene selv.';return}
