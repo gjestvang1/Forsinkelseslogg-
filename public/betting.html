@@ -549,15 +549,27 @@ function render(){
 let selMonth='',prevOrder=null,prevMonth='';const flipped=new Set();
 // Jackpot: when a newly settled day gave you a profit, rain gold coins once.
 function jackpot(){
+ if(!window.vinner&&document.readyState!=='complete'){addEventListener('load',jackpot,{once:true});return} // wait for vinner.js
  const K='forsinkelseslogg:sett:'+me;let seen=null;try{seen=JSON.parse(localStorage.getItem(K)||'null')}catch(e){}
  const days=Object.keys(data.results||{});
  if(!seen){try{localStorage.setItem(K,JSON.stringify(days))}catch(e){}return}
  const fresh=days.filter(x=>!seen.includes(x));if(!fresh.length)return;
  try{localStorage.setItem(K,JSON.stringify(days))}catch(e){}
  const won=data.bets.filter(b=>fresh.includes(b.date)&&b.profile===me&&b.payout!=null).reduce((s,b)=>s+b.payout-b.stake,0);
- if(!window.fx||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const anim=window.fx&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const chipsIn=()=>{const pb=document.querySelector('.player[aria-pressed=true]');if(pb&&anim){fx.flash(pb);fx.landChips(pb,Math.round(won/5))}};
+ // Winner reveal (vinner.js) for the latest newly settled day that had bets; each phone sees it once.
+ const day=fresh.filter(x=>data.bets.some(b=>b.date===x)).sort().pop();
+ if(day&&window.vinner){
+  const net={};data.bets.filter(b=>b.date===day).forEach(b=>{net[b.profile]=(net[b.profile]||0)+(b.payout??b.stake)-b.stake});
+  const r=data.results[day],t=parse(day).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'});
+  vinner({dag:t[0].toUpperCase()+t.slice(1),resultat:r.min>0?'Hun kom '+r.min+' min for sent':'Hun kom i tide',enhet:U.trim(),rader:Object.entries(net).map(([p,n])=>({navn:name(p),netto:n})).sort((a,b)=>b.netto-a.netto)});
+  if(won>0)setTimeout(chipsIn,4500);
+  return;
+ }
+ if(!anim)return;
  fx.rake();
- if(won>0)setTimeout(()=>{fx.jackpot(Math.round(won));const pb=document.querySelector('.player[aria-pressed=true]');if(pb){fx.flash(pb);fx.landChips(pb,Math.round(won/5))}},1100);
+ if(won>0)setTimeout(()=>{fx.jackpot(Math.round(won));chipsIn()},1100);
 }
 const monthName=(m,cap)=>{const[y,mo]=m.split('-').map(Number),t=new Date(y,mo-1,1).toLocaleDateString('nb-NO',{month:'long',year:y===new Date().getFullYear()?undefined:'numeric'});return cap?t[0].toUpperCase()+t.slice(1):t};
 $('month').addEventListener('change',e=>{selMonth=e.target.value;render()});
@@ -580,6 +592,7 @@ pushUI().catch(x=>{$("pushTxt").textContent="Feil ved sjekk av varsler: "+(x.mes
 </script>
 <script src="/swipe.js" defer></script>
 <script src="/fx.js" defer></script>
+<script src="/vinner.js" defer></script>
 <script src="/fun.js" defer></script>
 </body>
 </html>
