@@ -229,6 +229,7 @@ main{position:relative}
 
 <script src="/reg.js"></script>
 <script src="/vakter.js"></script>
+<script src="/poll.js"></script>
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/entries';
@@ -288,11 +289,13 @@ function add(){
 reg.onSaved('sent',res=>{if(res&&res.firstOfYear&&window.nyttAar)nyttAar()});
 reg.on(t=>{if(t==='sent')load();else render()});
 // One request (/api/alt) brings entries, lunch, bets and planned shifts together.
-let betData=null,loaded=false;
+let betData=null,loaded=false,dataV='';
 async function load(){
  try{
-  const r=await fetch('/api/alt',{cache:'no-store'});if(!r.ok)throw 0;
+  const r=await fetch('/api/alt?v='+encodeURIComponent(dataV),{cache:'no-store'});if(!r.ok)throw 0;
   const j=await r.json();
+  if(j.same){$('stat').textContent='Delt liste: oppdateres automatisk for alle med lenken.';return} // nothing new
+  dataV=j.v||'';
   rawE=(j.entries&&j.entries.entries)||[];
   if(j.lunsj)rawL=j.lunsj.entries||[];
   if(j.vakter)window.VAKTPLAN=j.vakter.plan||{};
@@ -635,8 +638,7 @@ function weekChart(mon,wk){
 }
 setKind('sent');
 load();
-setInterval(()=>{if(!document.hidden)load()},10000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
+startPoll(load,0);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
 <script src="/swipe.js" defer></script>

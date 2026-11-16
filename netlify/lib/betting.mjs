@@ -1,10 +1,10 @@
-import { getStore } from "@netlify/blobs";
+import { openStore, listAll } from "./snap.mjs";
 import webpush from "web-push";
 import { createHash } from "node:crypto";
 
 // Shared by the betting and log functions: data, settlement and push notifications.
-const store = () => getStore({ name: "betting", consistency: "strong" });
-const logStore = () => getStore({ name: "forsinkelser", consistency: "strong" });
+const store = () => openStore("betting");
+const logStore = () => openStore("forsinkelser");
 const START = 100;
 // Fixed price per bet type, so every bet in a pot weighs the same.
 const STAKES = { yn: 5, min: 10 };
@@ -13,10 +13,7 @@ const DEFAULT_NAMES = { p1: "Spiller 1", p2: "Spiller 2", p3: "Spiller 3" };
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const todayOslo = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Oslo" }).format(new Date());
 
-const all = async (s, prefix) => {
-  const { blobs } = await s.list(prefix ? { prefix } : undefined);
-  return (await Promise.all(blobs.map((b) => s.get(b.key, { type: "json" })))).filter(Boolean);
-};
+const all = (s, prefix) => listAll(s, prefix);
 
 // Result per date in minutes (0 = on time). A manual result wins; otherwise
 // the day is settled by the delay log as soon as it has an entry.

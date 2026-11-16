@@ -1,3 +1,11 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
+  # Skip publishing when a commit only changes documentation (no app files touched).
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- public netlify netlify.toml package.json"
+
+# Icons and images rarely change: let phones keep them for a week instead of asking each time.
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"

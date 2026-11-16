@@ -237,6 +237,7 @@ main{position:relative}
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script src="/vakter.js"></script>
+<script src="/poll.js"></script>
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/betting',PKEY='forsinkelseslogg:profil',CKEY='forsinkelseslogg:kode';
@@ -281,9 +282,11 @@ async function api(method,body,q){
 }
 async function load(){
  try{
-  const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw 0;
+  const r=await fetch(API+'?v='+encodeURIComponent(data.v||''),{cache:'no-store'});if(!r.ok)throw 0;
   const prev=data.today?Object.fromEntries(data.bets.map(b=>[b.id,b.ts])):null;
-  data=await r.json();
+  const j=await r.json();
+  if(j.same){$('stat').textContent='Delt mellom alle med lenken, oppdateres automatisk.';return} // nothing new
+  data=j;
   if(prev)announce(data.bets.filter(b=>b.profile!==me&&prev[b.id]!==b.ts));
   if(!today){today=data.today;$('date').min=today;$('date').value=today}
   today=data.today;
@@ -571,8 +574,7 @@ function dayBlock(d,res,bets){
  return w;
 }
 load();
-setInterval(()=>{if(!document.hidden)load()},10000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
+startPoll(load,1);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 pushUI().catch(x=>{$("pushTxt").textContent="Feil ved sjekk av varsler: "+(x.message||x)});
 </script>

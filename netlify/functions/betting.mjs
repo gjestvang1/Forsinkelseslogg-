@@ -1,3 +1,4 @@
+import { openStore, revOf } from "../lib/snap.mjs";
 import { kinds, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, state, vapid, subKey, notifyBet, notifyResult } from "../lib/betting.mjs";
 
 // Betting on the delay log. Bets, profile names and manual results live in
@@ -23,12 +24,15 @@ export default async (req) => {
   const s = store();
 
   if (req.method === "GET") {
+    // Unchanged since the page's last load: a tiny "same" instead of everything.
+    const v = (await revOf(s)) + "." + (await revOf(openStore("forsinkelser"))) + "." + todayOslo();
+    if (new URL(req.url).searchParams.get("v") === v) return json({ same: true, v });
     const { bets, res, months, balances, resets, names } = await state();
     // Guesses stay hidden until the day is settled, so nobody can undercut by one minute.
     const shown = bets.map((b) => (res[b.date] || b.type !== "min" ? b : { ...b, guess: null }));
     const profiles = PROFILES.map((id) => ({ id, name: names[id], balance: balances[id] }));
     const vapidKey = (await vapid(s)).publicKey;
-    return json({ profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN });
+    return json({ v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN });
   }
 
   // Turning notifications on or off only touches this device, so it needs no write code.

@@ -1,4 +1,4 @@
-import { getStore } from "@netlify/blobs";
+import { openStore, listAll } from "../lib/snap.mjs";
 import { store as betStore, state as betState, notifyResult, push, dayLabel, PROFILES } from "../lib/betting.mjs";
 
 // Worst single day and worst week (Monday start), summing all minutes in them.
@@ -14,7 +14,7 @@ const fmt = (m) => (m < 60 ? m + " min" : Math.floor(m / 60) + " t" + (m % 60 ? 
 
 // Each registration is its own blob (key = id), so two people saving at
 // the same time never overwrite each other.
-const store = () => getStore({ name: "forsinkelser", consistency: "strong" });
+const store = () => openStore("forsinkelser");
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -35,8 +35,7 @@ export default async (req) => {
   const s = store();
 
   if (req.method === "GET") {
-    const { blobs } = await s.list();
-    const entries = (await Promise.all(blobs.map((b) => s.get(b.key, { type: "json" })))).filter(Boolean);
+    const entries = await listAll(s);
     return json({ entries, needsCode: !!writeCode() });
   }
 
@@ -53,8 +52,7 @@ export default async (req) => {
     const settles = !before.res[b.date] && before.bets.some((x) => x.date === b.date);
     const id = Date.now() + "-" + Math.random().toString(36).slice(2, 7);
     const rec = { id, date: b.date, min, note: String(b.note || "").slice(0, 80), ts: Date.now() };
-    const { blobs } = await s.list();
-    const old = (await Promise.all(blobs.map((x) => s.get(x.key, { type: "json" })))).filter(Boolean);
+    const old = await listAll(s);
     await s.setJSON(id, rec);
     // New record (worst day or worst week)? Tell everyone. Only once there is history to beat.
     if (old.length) {

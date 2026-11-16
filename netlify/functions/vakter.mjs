@@ -1,9 +1,9 @@
-import { getStore } from "@netlify/blobs";
+import { openStore } from "../lib/snap.mjs";
 
 // Planned shifts entered in Settings. One blob ("plan") maps "YYYY-MM-DD" to a shift code,
 // or "FRI" for a day off. These override the built-in schedule in public/vakter.js.
 // Only dates and codes are stored, never names.
-const store = () => getStore({ name: "vakter", consistency: "strong" });
+const store = () => openStore("vakter");
 const CODES = ["D", "DPOL1", "DPOL3", "DPOL5", "FAGD", "A1", "A2", "FRI"];
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {

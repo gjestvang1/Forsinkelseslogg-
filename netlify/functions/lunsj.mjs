@@ -1,9 +1,9 @@
-import { getStore } from "@netlify/blobs";
+import { openStore, listAll } from "../lib/snap.mjs";
 import { store as betStore, push, dayLabel, PROFILES } from "../lib/betting.mjs";
 
 // Extra lunch minutes. Kept in their own store so they never settle bets or count as
 // late-arrival records; the log page adds them to the totals and the chart.
-const store = () => getStore({ name: "lunsj", consistency: "strong" });
+const store = () => openStore("lunsj");
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -23,8 +23,7 @@ export default async (req) => {
   const s = store();
 
   if (req.method === "GET") {
-    const { blobs } = await s.list();
-    const entries = (await Promise.all(blobs.map((b) => s.get(b.key, { type: "json" })))).filter(Boolean);
+    const entries = await listAll(s);
     return json({ entries, needsCode: !!writeCode() });
   }
 

@@ -40,3 +40,9 @@ Koden spørres om første gang og huskes i nettleseren. Uten `SKRIVEKODE` kan al
 - `public/runde2.js`: rulett på «Nå», vaktspesifikke meldinger, terningspådom (trykk tre ganger på ukeboksen, deretter risting), diplom ved 50/100/150/200/300/500 forsinkelser, røntgenmodus (hold på ukas tall).
 - Betting: krupier-rake når en dag avgjøres, sjetonger som lander i lommeboken ved gevinst (`fx.rake`, `fx.landChips`).
 - `public/tema.js`: sesongtema påske, 17. mai, sommer og Halloween (forhåndsvis med `?tema=paske|mai17|sommer|halloween`); kortstokk-animasjon ved sidebytte i `index.html`.
+
+### Mindre Netlify-forbruk
+- `public/poll.js`: bare siden som vises henter data; hvert 10. s ved bruk, 30 s etter 2 min uten aktivitet, 60 s etter 10 min, og med en gang ved åpning, sidebytte eller første trykk etter pause.
+- `netlify/lib/snap.mjs`: hver registrering ligger fortsatt i sin egen blob (ingenting er flyttet eller slettet), men hele lista caches i én snapshot-blob merket med lagerets revisjon. Alle skrivinger går via `openStore()` og øker revisjonen.
+- `/api/alt` og `/api/betting` tar `?v=`: uendret versjon gir bare `{same:true}`.
+- `netlify.toml`: ingen ny publisering når en commit bare endrer dokumentasjon; ikoner caches i en uke.
