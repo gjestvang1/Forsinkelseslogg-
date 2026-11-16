@@ -33,3 +33,10 @@ npx netlify-cli deploy --prod
 I Netlify: Project configuration → Environment variables → legg til `SKRIVEKODE` med en kode dere velger.
 Publiser på nytt etterpå. Da kan alle lese, men bare de som kjenner koden kan legge til og slette.
 Koden spørres om første gang og huskes i nettleseren. Uten `SKRIVEKODE` kan alle med lenken skrive.
+
+### Runde 2 (november 2026)
+- `/api/alt` (`netlify/functions/alt.mjs`) samler loggføringer, lunsj, betting og vakter i én forespørsel for Logg.
+- Logg: «i tide»-rekke over vaktdager, tabell per vakttype, ventetid som tikker etter vaktstart, neonskilt, kort med baksiden opp mens siden laster, lyspærer rundt ferske rekorder.
+- `public/runde2.js`: rulett på «Nå», vaktspesifikke meldinger, terningspådom (trykk tre ganger på ukeboksen, deretter risting), diplom ved 50/100/150/200/300/500 forsinkelser, røntgenmodus (hold på ukas tall).
+- Betting: krupier-rake når en dag avgjøres, sjetonger som lander i lommeboken ved gevinst (`fx.rake`, `fx.landChips`).
+- `public/tema.js`: sesongtema påske, 17. mai, sommer og Halloween (forhåndsvis med `?tema=paske|mai17|sommer|halloween`); kortstokk-animasjon ved sidebytte i `index.html`.

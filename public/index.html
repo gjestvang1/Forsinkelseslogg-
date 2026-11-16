@@ -22,6 +22,7 @@ html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
    children, so there is nothing to scroll anyway. */
 html,body{margin:0;height:100%;height:100lvh;background:var(--felt-lo-shell,#0B2F25);overscroll-behavior:none}
 .jul body,.jul{--felt-lo-shell:#3E0A10}
+.paske{--cap:#4B3B78;--felt-lo-shell:#2A2045}.mai17{--cap:#1C4590;--felt-lo-shell:#0A1F45}.sommer{--cap:#137089;--felt-lo-shell:#083846}.halloween{--cap:#2E1F40;--felt-lo-shell:#120C1A}
 /* The pages sit below the status bar / Dynamic Island. --sat is env() or a measured fallback. */
 :root{--sat:env(safe-area-inset-top,0px)}
 /* #cap only measures the status bar height; the pages themselves run up behind the status bar. */
@@ -36,10 +37,14 @@ html,body{margin:0;height:100%;height:100lvh;background:var(--felt-lo-shell,#0B2
 #lights i:nth-child(4n+1){background:#FF4D4D;--g:#FF4D4D}#lights i:nth-child(4n+2){background:#FFD34D;--g:#FFD34D;animation-delay:.4s}#lights i:nth-child(4n+3){background:#4DD2FF;--g:#4DD2FF;animation-delay:.8s}#lights i:nth-child(4n){background:#7CFF6B;--g:#7CFF6B;animation-delay:1.2s}
 @keyframes blink{0%,100%{opacity:1;box-shadow:0 0 8px var(--g)}50%{opacity:.35;box-shadow:none}}
 #sleigh{position:fixed;top:18%;left:0;z-index:6;pointer-events:none;font-size:30px;white-space:nowrap;transform:translateX(-200px)}
+
+.flycard{position:fixed;z-index:40;width:46px;height:64px;border-radius:6px;border:2px solid #F6EBD0;pointer-events:none;background:repeating-linear-gradient(45deg,#8E1B2A 0 4px,#B2283A 4px 8px);box-shadow:0 6px 16px rgba(0,0,0,.45);font-style:normal}
+.flycard.face{background:#F6EBD0;color:#B3212F;display:grid;place-items:center;font:900 1.2rem system-ui,sans-serif}
 #snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .jul{--bg:#5A0F16;--cap:#8A1C26}
 iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
 </style>
+<script src="/tema.js"></script>
 </head>
 <body>
 <div id="cap"></div>
@@ -78,7 +83,20 @@ iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
  let page=fromHash(),base=0,raf=0,pending=null;
  const W=()=>track.parentNode.clientWidth;
  const set=x=>{pending=x;if(!raf)raf=requestAnimationFrame(()=>{raf=0;track.style.transform='translate3d('+pending+'px,0,0)'})};
+ // D2: a few playing cards flutter across when the page changes.
+ const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ function shuffle(dir){
+  if(still)return;
+  const F=['A♠','K♥','Q♣','J♦','10♠','A♥'];
+  for(let k=0;k<3;k++){
+   const c=document.createElement('i');c.className='flycard'+(k===1?' face':'');if(k===1)c.textContent=F[Math.floor(Math.random()*F.length)];
+   const y=innerHeight*(.25+Math.random()*.4),x0=dir>0?innerWidth+30:-80,x1=dir>0?-90:innerWidth+40;
+   c.style.left='0';c.style.top=y+'px';document.body.appendChild(c);
+   c.animate([{transform:`translate(${x0}px,0) rotate(${dir*20}deg)`},{transform:`translate(${(x0+x1)/2}px,${-40-k*20}px) rotate(${-dir*160}deg)`,offset:.5},{transform:`translate(${x1}px,${20+k*10}px) rotate(${-dir*340}deg)`}],{duration:650+k*90,delay:k*60,easing:'cubic-bezier(.3,.6,.4,1)',fill:'backwards'}).onfinish=()=>c.remove();
+  }
+ }
  function go(i,animate){
+  if(animate!==false&&i!==page)shuffle(i>page?1:-1);
   page=i;track.classList.toggle('anim',animate!==false);
   if(raf){cancelAnimationFrame(raf);raf=0}
   track.style.transform='translate3d('+(-i*W())+'px,0,0)';
@@ -123,6 +141,20 @@ iframe{width:50%;height:100%;border:0;display:block;background:var(--bg)}
    setTimeout(fly,2500);
    document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!run)requestAnimationFrame(tick)});
   }
+ }
+ // D8: season themes (tema.js) get their own slow-falling decorations.
+ const P={paske:['🐣','🥚','🌷'],mai17:['🇳🇴','🎈','🍦'],sommer:['☀️','🌴','🍹'],halloween:['🦇','🍂','🎃']}[window.TEMA];
+ if(P&&!still){
+  const cv=document.getElementById('snow'),cx=cv.getContext('2d');cv.hidden=false;
+  let W,H;const dpr=Math.min(2,devicePixelRatio||1),fl=[];
+  const size=()=>{W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0)};size();addEventListener('resize',size);
+  for(let i=0;i<14;i++)fl.push({x:Math.random()*W,y:Math.random()*H,s:.25+Math.random()*.5,w:Math.random()*6.28,e:P[i%P.length],z:14+Math.random()*10,r:Math.random()*6.28});
+  let t0=0,run=false;const tick=t=>{run=true;const dt=Math.min(50,t-(t0||t))/16;t0=t;cx.clearRect(0,0,W,H);cx.globalAlpha=.55;cx.textAlign='center';cx.textBaseline='middle';
+   for(const f of fl){f.y+=f.s*dt;f.w+=.015*dt;f.r+=.01*dt;f.x+=Math.sin(f.w)*.35*dt;if(f.y>H+30){f.y=-30;f.x=Math.random()*W}
+    cx.save();cx.translate(f.x,f.y);cx.rotate(Math.sin(f.r)*.5);cx.font=f.z+'px system-ui';cx.fillText(f.e,0,0);cx.restore()}
+   if(!document.hidden)requestAnimationFrame(tick);else{t0=0;run=false}};
+  requestAnimationFrame(tick);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!run)requestAnimationFrame(tick)});
  }
  if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 })();

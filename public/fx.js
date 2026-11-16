@@ -145,6 +145,29 @@
         c.animate([{ transform: "translateY(0) rotate(0)" }, { transform: `translateY(${innerHeight + 60}px) rotate(${360 + Math.random() * 720}deg)` }], { duration: 1500 + Math.random() * 1000, delay: Math.random() * 600, easing: "cubic-bezier(.4,0,.8,.6)", fill: "backwards" }).onfinish = () => c.remove();
       }
     },
+    // D5: the croupier's rake sweeps across the table when a day is settled.
+    rake() {
+      const r = document.createElement("div"); r.className = "rake"; document.body.appendChild(r);
+      const chips = [];
+      for (let i = 0; i < 5; i++) { const c = document.createElement("i"); c.className = jul ? "fxgift" : "fxchip"; if (jul) c.textContent = "🍪"; c.style.top = innerHeight * 0.46 + 24 + (i % 2) * 10 + "px"; c.style.left = innerWidth * (0.25 + i * 0.1) + "px"; document.body.appendChild(c); chips.push(c); }
+      r.animate([{ transform: `translateX(${innerWidth + 20}px)` }, { transform: "translateX(-180px)" }], { duration: 1300, easing: "cubic-bezier(.5,0,.4,1)" }).onfinish = () => r.remove();
+      chips.forEach((c, i) => {
+        const x0 = parseFloat(c.style.left), hit = (innerWidth + 20 - x0) / (innerWidth + 200);
+        c.animate([{ transform: "translateX(0)", opacity: 1 }, { transform: "translateX(0)", opacity: 1, offset: Math.max(0.05, Math.min(0.9, hit)) }, { transform: `translateX(${-x0 - 60}px) rotate(-200deg)`, opacity: 1 }], { duration: 1300, easing: "linear" }).onfinish = () => c.remove();
+      });
+    },
+    // D6: winnings fall as chips and land on your wallet, which bounces.
+    landChips(target, n) {
+      if (!target) return;
+      const r = target.getBoundingClientRect(), tx = r.left + r.width / 2 - 11, ty = r.top + r.height / 2 - 11;
+      for (let i = 0; i < Math.min(18, Math.max(6, n)); i++) {
+        const c = document.createElement("i"); c.className = jul ? "fxgift" : "fxchip"; if (jul) c.textContent = "🍪";
+        c.style.left = tx + "px"; c.style.top = ty + "px"; document.body.appendChild(c);
+        const sx = (Math.random() - 0.5) * innerWidth, sy = -ty - 60 - Math.random() * 80;
+        c.animate([{ transform: `translate(${sx}px,${sy}px) rotate(0)`, opacity: 1 }, { transform: `translate(0,0) rotate(${360 + Math.random() * 360}deg)`, opacity: 1, offset: 0.85 }, { transform: "translate(0,-6px) scale(.6)", opacity: 0 }], { duration: 1100 + Math.random() * 500, delay: i * 70, easing: "cubic-bezier(.55,0,.8,.5)", fill: "backwards" }).onfinish = () => c.remove();
+      }
+      setTimeout(() => target.animate([{ transform: "scale(1)" }, { transform: "scale(1.08) translateY(2px)" }, { transform: "scale(1)" }], { duration: 300, iterations: 3 }), 1100);
+    },
     jackpot(won) {
       const banner = document.createElement("div");
       banner.className = "fxjack"; banner.textContent = (jul ? "🎁 " : "🎰 ") + "+" + won + (jul ? " pepperkaker" : " cr");

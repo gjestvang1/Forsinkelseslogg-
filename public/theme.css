@@ -147,3 +147,84 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
 .gear::before{content:"";position:absolute;inset:9px;background:var(--mute);-webkit-mask:var(--gear) center/contain no-repeat;mask:var(--gear) center/contain no-repeat}
 .gear:active::before{background:var(--accent)}
 :root{--gear:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.14 12.94a7.5 7.5 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7 7 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.5.42l-.36 2.54a7 7 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.5 7.5 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96c.5.38 1.05.7 1.63.94l.36 2.54a.5.5 0 0 0 .5.42h3.8a.5.5 0 0 0 .5-.42l.36-2.54a7 7 0 0 0 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z'/%3E%3C/svg%3E")}
+
+/* Season themes (tema.js): Easter, 17 May, summer, Halloween */
+:root.paske{--bg:#3A2D5C;--surface:#46386B;--line:#6A5A94;--mute:#C9BEE6;--accent:#F7D84A;--felt-hi:#4B3B78;--felt-lo:#2A2045}
+:root.mai17{--bg:#0E2A5C;--surface:#163874;--line:#3457A0;--mute:#B8C7E8;--accent:#F2545B;--felt-hi:#1C4590;--felt-lo:#0A1F45}
+:root.sommer{--bg:#0B4B5C;--surface:#0F5C70;--line:#2A8094;--mute:#B3DCE4;--accent:#FFB347;--felt-hi:#137089;--felt-lo:#083846}
+:root.halloween{--bg:#1C1426;--surface:#2A1E38;--line:#4A3560;--mute:#C3B2D6;--accent:#FF7A1A;--felt-hi:#2E1F40;--felt-lo:#120C1A}
+.paske h1::before{content:"🐣 ✦ 🥚 ✦ 🐣"}.paske .hero small::after{content:"  🐰"}
+.mai17 h1::before{content:"🇳🇴 ✦ 🇳🇴 ✦ 🇳🇴"}.mai17 .hero small::after{content:"  🎺"}
+.sommer h1::before{content:"☀️ ✦ 🌴 ✦ ☀️"}.sommer .hero small::after{content:"  🍹"}
+.halloween h1::before{content:"🦇 ✦ 🎃 ✦ 🦇"}.halloween .hero small::after{content:"  🎃"}
+.tema .hero{box-shadow:inset 0 0 0 5px var(--bg),inset 0 0 0 6px color-mix(in srgb,var(--accent) 50%,transparent)}
+.fx.tema h1::before{animation:twinkle 2.6s ease-in-out infinite}
+
+/* D3: neon sign in the hero; flickers more with more minutes, a letter falls past an hour */
+.hero small.neon{color:#FFE9A8;text-shadow:0 0 4px #FFD35A,0 0 12px var(--accent),0 0 22px var(--accent);letter-spacing:.06em}
+.fx .hero small.neon{animation:neon calc(9s / var(--flick,1)) steps(1) infinite}
+@keyframes neon{0%,100%{opacity:1}4%{opacity:.55}5%{opacity:1}31%{opacity:1}32%{opacity:.35}33%{opacity:.9}34%{opacity:.4}35%{opacity:1}72%{opacity:1}73%{opacity:.6}74%{opacity:1}}
+.hero small.neon .drop{display:inline-block;transform-origin:0 100%;transform:translateY(.5em) rotate(28deg);opacity:.5;text-shadow:none;color:var(--mute)}
+.fx .hero small.neon .drop{animation:dropl 1.4s cubic-bezier(.5,0,.7,1.6) both}
+@keyframes dropl{from{transform:none;opacity:1}}
+
+/* D7: face-down cards while the first data loads */
+.laster #wk,.laster .stats b,.laster .rec b{color:transparent!important;text-shadow:none;position:relative}
+.laster #wk::after,.laster .stats b::after,.laster .rec b::after{content:"";position:absolute;left:50%;top:50%;width:1.6em;height:2.1em;max-height:120%;transform:translate(-50%,-50%);border-radius:5px;border:2px solid #F6EBD0;background:repeating-linear-gradient(45deg,#8E1B2A 0 4px,#B2283A 4px 8px);box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.laster .stats b::after,.laster .rec b::after{left:1em;width:1.1em;height:1.5em}
+.fx .flipin{animation:flipin .55s cubic-bezier(.3,.7,.3,1) both}
+@keyframes flipin{from{transform:perspective(400px) rotateY(90deg);opacity:.3}}
+
+/* D4: chasing light bulbs around a fresh record */
+.rec div.bulbs{border-color:var(--accent);box-shadow:0 0 14px color-mix(in srgb,var(--accent) 45%,transparent)}
+.rec div.bulbs::before{content:"";position:absolute;inset:3px;border-radius:8px;pointer-events:none;background:radial-gradient(circle,#FFF4C2 0 2px,transparent 2.6px) 0 0/12px 12px;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:4px}
+.fx .rec div.bulbs::before{animation:chase .5s steps(2) infinite}
+@keyframes chase{50%{background-position:6px 0;filter:brightness(1.5)}}
+
+/* F1 streak, H2 waiting counter */
+.streak{margin:6px 0 0;font-size:.9rem;color:var(--mute)}.streak b{color:var(--accent)}
+.wait{margin:8px auto 0;display:inline-flex;gap:8px;align-items:baseline;border:1px solid var(--accent);border-radius:999px;padding:4px 12px;font-size:.92rem}
+.wait b{font-variant-numeric:tabular-nums;color:var(--accent);font-size:1.05rem}
+.wait{flex-wrap:wrap;justify-content:center;row-gap:0}
+.hero .wait small{display:inline;color:var(--mute);font-size:.8rem;text-transform:none;letter-spacing:0;font-weight:500}
+.fx .wait .dot{animation:twinkle 1s steps(2) infinite}
+
+/* F2 per shift type */
+.vtab{display:grid;grid-template-columns:auto repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:.86rem}
+.vtab>*{background:var(--surface);padding:7px 8px;text-align:right}
+.vtab>.h{color:var(--mute);font-size:.74rem;font-weight:600}
+.vtab>.l{text-align:left;font-weight:700}
+.vnote{color:var(--mute);font-size:.78rem;margin:6px 0 0}
+
+/* H7: X-ray mode */
+.xray body{filter:grayscale(1) contrast(1.35) brightness(.95)}
+.xray body::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;background:linear-gradient(180deg,rgba(80,170,255,.22),rgba(20,60,120,.28));mix-blend-mode:screen}
+.xray .hero{outline:10px solid #EDEDED;outline-offset:-2px;border-radius:22px;background:repeating-linear-gradient(-45deg,rgba(255,255,255,.06) 0 6px,transparent 6px 12px)}
+.xray .hero::before{content:"RØNTGEN · ukas forsinkelse, sideprojeksjon";display:block;font:700 .7rem/1 Inter,sans-serif;letter-spacing:.12em;color:#fff;margin-bottom:6px}
+.xray .hero::after{content:"Funn: kronisk sen. Anbefaling: vekkerklokke, 2 stk.";display:block;font:600 .78rem Inter,sans-serif;color:#fff;margin-top:8px}
+.xray #wk{color:#fff;text-shadow:0 0 18px #fff;letter-spacing:.04em}
+.fx.xray body::after{background-size:100% 300%;animation:scan 2.4s linear infinite;background-image:linear-gradient(180deg,rgba(80,170,255,.22),rgba(20,60,120,.28) 45%,rgba(160,220,255,.45) 50%,rgba(20,60,120,.28) 55%)}
+@keyframes scan{from{background-position:0 100%}to{background-position:0 0}}
+
+/* D1 roulette, H3 dice, H5 diploma */
+.ovl{position:fixed;inset:0;z-index:85;display:grid;place-items:center;background:rgba(0,0,0,.55);padding:24px}
+.wheel{width:220px;height:220px;border-radius:50%;border:8px solid #6B3E12;box-shadow:0 0 0 3px var(--accent),0 16px 40px rgba(0,0,0,.6);background:repeating-conic-gradient(#B3212F 0 10deg,#151515 10deg 20deg);position:relative}
+.wheel::after{content:"";position:absolute;inset:34%;border-radius:50%;background:radial-gradient(circle,#E5B64A,#8A6418);box-shadow:0 0 0 4px #3A2208}
+.ball{position:absolute;left:50%;top:6px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #000}
+.ovlbox{display:grid;gap:14px;justify-items:center;text-align:center}
+.ovlbox p{margin:0;font:700 1.5rem 'Playfair Display',serif;color:#F6EBD0;text-shadow:0 2px 0 #000}
+.ovlbox small{color:#F6EBD0;font-size:.9rem;max-width:280px}
+.dice{display:flex;gap:16px}
+.die{width:64px;height:64px;border-radius:12px;background:#F6EBD0;color:#B3212F;display:grid;place-items:center;font:900 2.2rem Inter,sans-serif;box-shadow:0 6px 0 #B8A78A,0 10px 20px rgba(0,0,0,.5)}
+.diploma{max-width:320px;background:#FBF3DC;color:#3A2A10;border:6px double #B8892A;border-radius:6px;padding:22px 20px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.diploma h3{font:900 1.6rem 'Playfair Display',serif;margin:0 0 6px;color:#7A1C1C}
+.diploma p{margin:6px 0;font-size:.95rem}.diploma .seal{font-size:2.4rem}
+.diploma button{margin-top:10px;background:#7A1C1C;color:#FBF3DC;border:0;border-radius:999px;padding:9px 20px;font-weight:700}
+.confetti{position:fixed;top:-12px;width:8px;height:14px;z-index:86;pointer-events:none}
+
+/* D5 croupier rake, D2 card shuffle */
+.rake{position:fixed;z-index:62;pointer-events:none;top:46%;left:0;width:150px;height:60px}
+.rake::before{content:"";position:absolute;left:0;top:26px;width:150px;height:7px;border-radius:4px;background:linear-gradient(#C08A4B,#7A4E22)}
+.rake::after{content:"";position:absolute;left:0;top:4px;width:9px;height:52px;border-radius:4px;background:linear-gradient(90deg,#7A4E22,#C08A4B)}
+.flycard{position:fixed;z-index:40;width:46px;height:64px;border-radius:6px;border:2px solid #F6EBD0;pointer-events:none;background:repeating-linear-gradient(45deg,#8E1B2A 0 4px,#B2283A 4px 8px);box-shadow:0 6px 16px rgba(0,0,0,.45)}
+.flycard.face{background:#F6EBD0;color:#B3212F;display:grid;place-items:center;font:900 1.4rem Inter,sans-serif}

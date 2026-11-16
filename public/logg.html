@@ -153,6 +153,8 @@ details.fold>summary small{color:var(--mute);font-weight:400;margin-left:auto;fo
 main{position:relative}
 </style>
 <link rel="stylesheet" href="/theme.css">
+<script src="/tema.js"></script>
+<script>document.documentElement.classList.add('laster')</script>
 </head>
 <body>
 <main>
@@ -161,10 +163,12 @@ main{position:relative}
  <h1>Forsinkelseslogg</h1>
  <button class="lead" id="lead" type="button" hidden><span class="cup">🏆</span><span><b id="leadT"></b><small id="leadS"></small></span><span class="arr">›</span></button>
 
- <section class="hero">
-  <small>Forsinket denne uken</small>
+ <section class="hero" id="hero">
+  <small class="neon" id="neon">Forsinket denne uken</small>
   <div class="big" id="wk">0 min</div>
   <p class="lunchline" id="lunchLine" hidden></p>
+  <p class="wait" id="wait" hidden><span class="dot">⏱</span><span>Venter …</span><b id="waitT"></b><small id="waitS"></small></p>
+  <p class="streak" id="streak" hidden></p>
  </section>
 
  <h2>Ny registrering</h2>
@@ -202,6 +206,10 @@ main{position:relative}
    <div><span>Verste dag</span><b id="rDay">–</b><small id="rDayS"></small></div>
    <div><span>Verste uke</span><b id="rWk">–</b><small id="rWkS"></small></div>
   </div>
+
+  <h3>Per vakttype (forsinkelser)</h3>
+  <div class="vtab" id="vtab"></div>
+  <p class="vnote" id="vnote"></p>
 
   <div class="chartHead"><button type="button" class="cback" id="cBack" hidden>‹ 12 uker</button><h3 id="chartT">Siste 12 uker</h3><span class="cnav" id="cNav" hidden><button type="button" id="cPrev" aria-label="Forrige uke">‹</button><button type="button" id="cNext" aria-label="Neste uke">›</button></span></div>
   <div class="chart" id="chart"></div>
@@ -251,13 +259,18 @@ let prevIds=null,prevAll=null;
  const [h,m]=start.split(':').map(Number),late=n.getHours()*60+n.getMinutes()-(h*60+m);
  if(late<=0){$('err').textContent='Ikke for sent: oppmøte er '+start+'.';return}
  if(late>600){$('err').textContent='Over 10 timer siden oppmøte ('+start+'). Skriv inn minuttene selv.';return}
- $('date').value=iso(n);checkDup();quick(late);
+ $('date').value=iso(n);checkDup();spin(late);
 };$('chips').appendChild(b)}
 function quick(min){
  const date=$('date').value||iso(new Date());
  reg.add(kind,{date,min,note:$('note').value.trim()});$('note').value='';$('err').textContent='';
+ // H6: on a planned shift, sometimes a shift-specific remark instead of the usual casino message.
+ const v=kind==='sent'&&date===iso(new Date())&&window.vaktFor?vaktFor(date):null;
+ if(v&&window.vaktMsg&&vaktMsg(v.kode))return;
  if(window.kasinoMsg)kasinoMsg(kind);
 }
+// D1: «Nå» spins a little roulette wheel first (runde2.js); straight save if it is missing.
+const spin=m=>window.rulett?rulett(m,()=>quick(m)):quick(m);
 function setKind(k){
  kind=k;$('naa').hidden=k!=='sent';$('kind').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
  $('min').max=k==='lunsj'?300:600;$('note').placeholder=k==='lunsj'?'f.eks. «Lang kø i kantina»':'f.eks. «Bussen gikk visst»';
@@ -274,21 +287,26 @@ function add(){
 }
 reg.onSaved('sent',res=>{if(res&&res.firstOfYear&&window.nyttAar)nyttAar()});
 reg.on(t=>{if(t==='sent')load();else render()});
+// One request (/api/alt) brings entries, lunch, bets and planned shifts together.
+let betData=null,loaded=false;
 async function load(){
  try{
-  const r=await fetch(API,{cache:'no-store'});if(!r.ok)throw 0;
-  rawE=(await r.json()).entries||[];
-  try{const l=await fetch('/api/lunsj',{cache:'no-store'});if(l.ok)rawL=(await l.json()).entries||[]}catch(e){}
-  if(window.lastVakter)await lastVakter();
+  const r=await fetch('/api/alt',{cache:'no-store'});if(!r.ok)throw 0;
+  const j=await r.json();
+  rawE=(j.entries&&j.entries.entries)||[];
+  if(j.lunsj)rawL=j.lunsj.entries||[];
+  if(j.vakter)window.VAKTPLAN=j.vakter.plan||{};
+  if(j.betting)betData=j.betting;
+  loaded=true;document.documentElement.classList.remove('laster');
   $('stat').textContent='Delt liste: oppdateres automatisk for alle med lenken.';
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
  render();
  betBadge();
 }
 // Show on the Betting tab how many bets are placed for today.
-async function betBadge(){
+function betBadge(){
+ const d=betData;if(!d)return;
  try{
-  const d=await (await fetch('/api/betting',{cache:'no-store'})).json();
   const n=d.bets.filter(b=>b.date===d.today&&!d.results[b.date]).length;
   leader(d);
   $('betLink').replaceChildren('Betting');
@@ -336,7 +354,7 @@ function vakt(){
  $('vOk').textContent='Vakta starter '+v.start+'. Ikke for sent ennå.';
  $('hint').textContent=nowMin?'Eller trykk på minuttene for å lagre for valgt dato.':'Trykk på minuttene for å lagre for valgt dato.';
 }
-$('vNow').onclick=()=>{if(nowMin){const m=nowMin;nowMin=0;quick(m);vakt()}};
+$('vNow').onclick=()=>{if(nowMin){const m=nowMin;nowMin=0;spin(m);vakt()}};
 setInterval(()=>{if(!document.hidden)vakt()},20000);
 $('date').addEventListener('change',vakt);
 $('date').addEventListener('change',checkDup);
@@ -378,7 +396,7 @@ function render(){
  {const ids=[...entries,...lunch].filter(e=>!e.pending).map(e=>e.id);window.__freshIds=prevAll?new Set(ids.filter(i=>!prevAll.has(i))):new Set();prevAll=new Set(ids)}
  history();
  if(!both.length){
-  $('avg').textContent='0 min';$('chart').replaceChildren();$('wlab').replaceChildren();['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='');if(window.fun)fun.logg([],[]);return;
+  $('avg').textContent='0 min';$('chart').replaceChildren();$('wlab').replaceChildren();['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='');if(window.fun)fun.logg([],[]);r2();return;
  }
  const sorted=[...entries].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
  const dates=both.map(e=>e.date).sort();
@@ -406,12 +424,16 @@ function render(){
  // «NY REKORD» stamp while the record is fresh (day: last 3 days, week: this week); animate the first time.
  const fresh3=(Date.now()-parse(wd[0]).getTime())<3*864e5;
  stamp('rDay',fresh3&&wd[1]>0,'d'+wd[0]+wd[1]);stamp('rWk',ww.d.getTime()===wk.getTime()&&ww.s>0&&rows.length>1,'w'+iso(ww.d)+ww.s);
+ {const fresh24=d=>entries.some(e=>d(e)&&e.ts&&Date.now()-e.ts<864e5);
+  $('rDay').parentNode.classList.toggle('bulbs',fresh3&&fresh24(e=>e.date===wd[0]));
+  $('rWk').parentNode.classList.toggle('bulbs',ww.d.getTime()===wk.getTime()&&rows.length>1&&fresh24(e=>monday(parse(e.date)).getTime()===wk.getTime()))}
  $('rWk').textContent=fmt(ww.s);$('rWkS').textContent='Uke '+isoWeek(ww.d)+', '+ww.d.getFullYear()+' ('+ww.n+(ww.n===1?' gang':' ganger')+')';
  }else{['rDay','rWk'].forEach(i=>$(i).textContent='–');['rDayS','rWkS'].forEach(i=>$(i).textContent='')}
  // New entries since the last load: shake the big number, slide the row in.
  const fresh=prevIds?sorted.filter(e=>!prevIds.has(e.id)):[];prevIds=new Set(sorted.map(e=>e.id));
  if(fresh.length&&window.fx)fx.shake($('wk'));
  if(window.fun)fun.logg(sorted,fresh);
+ r2();
 }
 // History: one list grouped by month, newest first, filtered Alt / Forsinkelser / Lunsj.
 function history(){
@@ -438,6 +460,69 @@ function history(){
   g.items.forEach(x=>d.appendChild(reg.row(document,x.e,x.k,{tag:x.k==='lunsj'?'Lunsj':'',plus:x.k==='lunsj',fresh:freshIds.has(x.e.id),done:render})));
   L.appendChild(d);
  });
+}
+// ---- Round 2: shifts, streak, waiting counter, neon, first-load card flip ----
+// Known shift days (built-in rota + Innstillinger → Turnus) from the first one up to today.
+const DAYGRP={D:'Dagvakt',DPOL1:'Dagvakt',DPOL3:'Dagvakt',DPOL5:'Dagvakt',FAGD:'Dagvakt',A1:'A1',A2:'A2'};
+function shiftDays(){
+ if(!window.vaktFor)return[];
+ const keys=Object.keys(window.VAKTER||{}).concat(Object.keys(window.VAKTPLAN||{})).sort();if(!keys.length)return[];
+ const out=[],now=new Date(),t=iso(now);
+ for(let d=parse(keys[0]);iso(d)<=t;d.setDate(d.getDate()+1)){
+  const k=iso(d),v=vaktFor(k);if(!v)continue;
+  if(k===t){ // today counts once she is registered, the day is settled, or an hour has passed
+   const [h,m]=v.start.split(':').map(Number),past=now.getHours()*60+now.getMinutes()-(h*60+m)>=60;
+   const done=entries.some(e=>e.date===k)||(betData&&betData.results&&betData.results[k]);
+   if(!past&&!done)continue;
+  }
+  out.push({date:k,kode:v.kode,start:v.start});
+ }
+ return out;
+}
+let waitTimer=0,firstPaint=true;
+function r2(){
+ const days=shiftDays(),late=new Set(entries.map(e=>e.date));
+ // F1: on-time streak over shift days.
+ let cur=0,best=0,run=0;days.forEach(d=>{if(late.has(d.date))run=0;else{run++;best=Math.max(best,run)}});
+ for(let i=days.length-1;i>=0&&!late.has(days[i].date);i--)cur++;
+ const st=$('streak');st.hidden=!days.length;
+ if(days.length)st.replaceChildren(...(cur?['🔥 ',el('b',null,cur+(cur===1?' vakt':' vakter')+' på rad i tide'),' · rekord '+best]:['Rekka er brutt. Lengste rekke: ',el('b',null,best+(best===1?' vakt':' vakter'))]));
+ // F2: late arrivals per shift type.
+ const g={};const row=k=>(g[k]=g[k]||{v:0,n:0,m:0});
+ days.forEach(d=>row(DAYGRP[d.kode]||d.kode).v++);
+ entries.forEach(e=>{const k=window.vaktKode?vaktKode(e.date):'';const r=row(k?(DAYGRP[k]||k):'Uten vakt');r.n++;r.m+=e.min});
+ const T=$('vtab');T.replaceChildren(...['','Vakter','Sent','Snitt','Totalt'].map(x=>el('span','h',x)));
+ ['Dagvakt','A1','A2','Uten vakt'].filter(k=>g[k]).forEach(k=>{const r=g[k];
+  T.append(el('span','l',k),el('span',null,k==='Uten vakt'?'–':r.v),el('span',null,k==='Uten vakt'||!r.v?r.n:r.n+' ('+Math.round(r.n/r.v*100)+' %)'),el('span',null,r.n?fmt(r.m/r.n):'–'),el('span',null,fmt(r.m)))});
+ $('vnote').textContent='Vakter teller fra turnusen som er lagt inn. «Uten vakt» er registreringer på dager uten planlagt vakt.';
+ // D3: neon flickers more the more minutes this week; past an hour one letter falls down.
+ const wkMin=parseInt($('wk').textContent,10)||0,hours=/t/.test($('wk').textContent);
+ const N=$('neon');N.style.setProperty('--flick',String(1+Math.min(5,(hours?60:wkMin)/15)));
+ const drop=hours||wkMin>=60;
+ if(drop&&!N.querySelector('.drop'))N.replaceChildren('Forsinket denne uke',el('span','drop','n'));
+ else if(!drop&&N.querySelector('.drop'))N.textContent='Forsinket denne uken';
+ // D7: cards turn face up on the first load.
+ if(firstPaint&&loaded){firstPaint=false;document.querySelectorAll('#wk,.stats b,.rec b').forEach(x=>x.classList.add('flipin'))}
+ // H5: anniversaries (runde2.js).
+ if(loaded&&window.jubileum)jubileum(entries.filter(e=>!e.pending).length);
+ // H2: ticking counter while waiting for her on a planned shift.
+ clearInterval(waitTimer);tick();waitTimer=setInterval(tick,1000);
+}
+function tick(){
+ const w=$('wait'),now=new Date(),t=iso(now),v=window.vaktFor?vaktFor(t):null;
+ let on=false;
+ if(v&&loaded){
+  const [h,m]=v.start.split(':').map(Number),[eh,em]=v.slutt.split(':').map(Number),s=(now.getHours()*60+now.getMinutes())*60+now.getSeconds()-(h*60+m)*60;
+  const settled=betData&&betData.results&&betData.results[t];
+  on=s>0&&s<180*60&&(now.getHours()*60+now.getMinutes())<eh*60+em&&!entries.some(e=>e.date===t)&&!settled;
+  if(on){
+   const mm=Math.floor(s/60),ss=s%60;$('waitT').textContent=mm+':'+pad(ss);
+   const C=[[15,'gipset hånd','gipsede hender'],[5,'tilpasset Aircast','tilpassede Aircaster'],[3,'par buddy loops','par buddy loops'],[30,'reponert håndledd','reponerte håndledd']];
+   const c=C[Math.floor(s/20)%C.length],n=Math.round(s/60/c[0]*10)/10;
+   $('waitS').textContent='= '+String(n).replace('.',',')+' '+(n===1?c[1]:c[2]);
+  }
+ }
+ w.hidden=!on;if(!on)clearInterval(waitTimer);
 }
 function stamp(id,on,key){
  const box=$(id).parentNode;let st=box.querySelector('.stamp');
@@ -557,5 +642,6 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch
 <script src="/swipe.js" defer></script>
 <script src="/fx.js" defer></script>
 <script src="/fun.js" defer></script>
+<script src="/runde2.js" defer></script>
 </body>
 </html>
