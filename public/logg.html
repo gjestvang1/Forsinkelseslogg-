@@ -80,6 +80,8 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 #vaktBox{display:grid;gap:10px}#vaktBox[hidden]{display:none}
 .hint{margin:0;color:var(--mute);font-size:.82rem}
 .chips .chip{min-height:44px;padding:8px 14px;font-size:1rem}
+.chips .chip.naa{border-style:solid;background:var(--accent);color:#0B2F25;font-weight:800}
+.chips .chip.naa[hidden]{display:none}
 .outbox{margin:0;font-size:.85rem;color:var(--accent)}
 .mon{border-bottom:1px solid var(--line)}
 .mon>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:12px 0;font-weight:700}
@@ -240,13 +242,22 @@ let prevIds=null,prevAll=null;
 
 // One tap on a chip saves it right away (with Angre in the toast).
 [5,10,15,20,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.onclick=()=>quick(n);$('chips').appendChild(b)});
+// «Nå»: registers today's lateness right as she walks in, counted from today's shift start
+// (vakter.js / Innstillinger → Turnus), or 07:30 when no shift is planned.
+{const b=el('button','chip naa','Nå');b.type='button';b.id='naa';b.onclick=()=>{
+ const n=new Date(),v=window.vaktFor?vaktFor(iso(n)):null,start=v?v.start:'07:30';
+ const [h,m]=start.split(':').map(Number),late=n.getHours()*60+n.getMinutes()-(h*60+m);
+ if(late<=0){$('err').textContent='Ikke for sent: oppmøte er '+start+'.';return}
+ if(late>600){$('err').textContent='Over 10 timer siden oppmøte ('+start+'). Skriv inn minuttene selv.';return}
+ $('date').value=iso(n);checkDup();quick(late);
+};$('chips').appendChild(b)}
 function quick(min){
  const date=$('date').value||iso(new Date());
  reg.add(kind,{date,min,note:$('note').value.trim()});$('note').value='';$('err').textContent='';
  if(window.kasinoMsg)kasinoMsg(kind);
 }
 function setKind(k){
- kind=k;$('kind').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
+ kind=k;$('naa').hidden=k!=='sent';$('kind').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
  $('min').max=k==='lunsj'?300:600;$('note').placeholder=k==='lunsj'?'f.eks. «Lang kø i kantina»':'f.eks. «Bussen gikk visst»';
  checkDup();vakt();
 }
