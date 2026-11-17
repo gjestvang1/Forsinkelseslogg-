@@ -228,3 +228,54 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
 .rake::after{content:"";position:absolute;left:0;top:4px;width:9px;height:52px;border-radius:4px;background:linear-gradient(90deg,#7A4E22,#C08A4B)}
 .flycard{position:fixed;z-index:40;width:46px;height:64px;border-radius:6px;border:2px solid #F6EBD0;pointer-events:none;background:repeating-linear-gradient(45deg,#8E1B2A 0 4px,#B2283A 4px 8px);box-shadow:0 6px 16px rgba(0,0,0,.45)}
 .flycard.face{background:#F6EBD0;color:#B3212F;display:grid;place-items:center;font:900 1.4rem Inter,sans-serif}
+
+/* Round 3 */
+/* G5: sick / off / swapped shift */
+.vedit{justify-self:start;background:none;border:0;color:var(--mute);text-decoration:underline;font-size:.85rem;padding:4px 0;min-height:32px}
+.veditBox{display:grid;gap:8px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px}
+.vpal .chip{min-height:40px;font-size:.88rem;padding:6px 12px}
+.vpal .chip[aria-pressed=true]{background:var(--accent);color:var(--felt-lo);border-style:solid}
+/* J1: turnus ends soon */
+.turnvarsel{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:10px 12px;border-radius:12px;border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.turnvarsel .ti{font-size:1.4rem}
+.turnvarsel p{flex:1;margin:0;font-size:.88rem;line-height:1.3}
+.turnvarsel p b{display:block}.turnvarsel p small{color:var(--mute)}
+.turnvarsel .tbtn{background:var(--accent);color:var(--felt-lo);border:0;border-radius:999px;padding:8px 12px;font-weight:700;font-size:.82rem;white-space:nowrap}
+.turnvarsel .tx{background:none;border:0;color:var(--mute);font-size:1rem;padding:6px}
+/* G3: the bank */
+.loan{margin-top:10px;display:grid;gap:8px;padding:10px 12px;border-radius:12px;border:1px dashed var(--accent)}
+.loan p{margin:0;font-size:.88rem;color:var(--mute)}
+.player small.gjeld{display:block;color:var(--bad);font-weight:700;margin-top:2px}
+/* G1 year table, G4 player stats */
+.aarH{margin:18px 0 4px;font-family:'Playfair Display',Georgia,serif;color:var(--accent)}
+.stab{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:.84rem}
+.stab>*{background:var(--surface);padding:7px 8px;text-align:right;min-width:0;overflow-wrap:anywhere}
+.stab>.h{color:var(--mute);font-size:.76rem;font-weight:700}
+.stab>.h.me{color:var(--accent)}
+.stab>.l{text-align:left;color:var(--mute)}
+.stab>.me{font-weight:700}
+#gipsBox .row{grid-template-columns:minmax(0,1fr) auto}
+
+/* K6: plaster theme («gips») — white cast, marker writing, stockinette band at the top */
+:root.gips{--bg:#ECE9E2;--surface:#F7F5F0;--ink:#26292E;--mute:#6B675E;--line:#CFC8B9;--accent:#1E4FC2;--good:#1F8A5B;--bad:#C0392B;--felt-hi:#F6F4EE;--felt-lo:#E4DFD3;--lunch:#2E8FB8;color-scheme:light}
+.gips body::before{background:
+ url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cg fill='none' stroke='%23B9B1A0' stroke-width='1.1' opacity='.55'%3E%3Cpath d='M10 40l22 9 9-6 18 14 7 19'/%3E%3Cpath d='M170 20l-12 18 6 12-14 20'/%3E%3Cpath d='M200 180l20 6 6 16 18 4'/%3E%3Cpath d='M60 200l-8 18 12 10-4 22'/%3E%3C/g%3E%3C/svg%3E"),
+ linear-gradient(180deg,var(--felt-hi) 0,var(--felt-lo) 85%)}
+.gips h1,.gips .big,.gips .rec b,.gips .player b{font-family:'Permanent Marker','Marker Felt','Comic Sans MS',cursive}
+.gips h1{color:var(--accent);transform:rotate(-2deg);letter-spacing:0}
+.gips h1::before{content:"✍️ ✦ 🩹 ✦ ✍️";letter-spacing:.4em}
+.gips.fx h1{animation:none;background:none;-webkit-text-fill-color:currentColor;color:var(--accent)}
+.gips .hero{background:repeating-linear-gradient(90deg,rgba(0,0,0,.03) 0 3px,transparent 3px 7px),var(--surface);border:2px solid var(--line);box-shadow:inset 0 10px 0 -2px #DCD6C8}
+.gips .hero small.neon{color:var(--accent);text-shadow:none}
+.gips .hero small::after{content:"  🩹"}
+.gips .big{color:var(--ink)}
+.gips .add,.gips .card,.gips .rec div,.gips details.fold,.gips .push,.gips .player{background:var(--surface);box-shadow:0 1px 0 rgba(0,0,0,.06)}
+.gips .lead{background:var(--ink);color:#F7F5F0}.gips .lead b,.gips .lead small,.gips .lead .arr{color:#F7F5F0}
+.gips .vakt,.gips .tabs,.gips .quickd button,.gips .ptype{background:rgba(0,0,0,.04)}
+.gips .stamp{color:var(--accent);border-color:var(--accent)}
+.gips .chip{border-color:var(--accent)}
+/* Logg → Statistikk shortcut */
+.tostat{display:block;width:100%;margin:22px 0 0;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.16);color:var(--ink);font-weight:600;text-align:left;font-size:1rem}
+.gips .tostat{background:var(--surface)}
+.gips .nowbtn,.gips .chips .chip.naa,.gips .tabs button[aria-selected=true],.gips .quickd button[aria-pressed=true]{color:#fff}
+.gips input,.gips select{background:#fff}

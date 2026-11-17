@@ -1,8 +1,8 @@
 // Runs inside each page. The pages live side by side in the shell (index.html),
 // and this file feeds the finger's movement to the shell so the slide follows it 1:1.
 (() => {
-  const me = ["/logg", "/betting"].findIndex((p) => location.pathname.startsWith(p));
-  const hash = ["#logg", "#betting"][me] || "";
+  const me = ["/logg", "/betting", "/statistikk"].findIndex((p) => location.pathname.startsWith(p));
+  const hash = ["#logg", "#betting", "#statistikk"][me] || "";
   let pager = null;
   try { if (window.parent !== window) pager = window.parent.pager; } catch (e) {}
   if (!pager) { location.replace(me > 0 ? "/" + hash : "/"); return; } // opened directly: load the shell

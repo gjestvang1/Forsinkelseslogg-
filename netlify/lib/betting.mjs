@@ -1,4 +1,4 @@
-import { openStore, listAll } from "./snap.mjs";
+import { openStore, listAll, entriesOf } from "./snap.mjs";
 import webpush from "web-push";
 import { createHash } from "node:crypto";
 
@@ -6,6 +6,8 @@ import { createHash } from "node:crypto";
 const store = () => openStore("betting");
 const logStore = () => openStore("forsinkelser");
 const START = 100;
+// G3: the bank lends LOAN once a month to a nearly broke player; REPAY is taken from next month's start.
+const LOAN = 20, REPAY = 25, LOAN_BELOW = 10;
 // Fixed price per bet type, so every bet in a pot weighs the same.
 const STAKES = { yn: 5, min: 10 };
 const PROFILES = ["p1", "p2", "p3"];
@@ -17,13 +19,20 @@ const all = (s, prefix) => listAll(s, prefix);
 
 // Result per date in minutes (0 = on time). A manual result wins; otherwise
 // the day is settled by the delay log as soon as it has an entry.
-function results(rounds, log) {
+// G5: a day marked sick (SYK) or taken off (FRI) in the shift plan, with bets on it and nothing
+// registered, is void: everyone gets their stake back.
+function results(rounds, log, plan, betDates) {
   const r = {};
   for (const e of log) r[e.date] = { min: (r[e.date]?.min || 0) + e.min, source: "logg" };
   // A hand-set "on time" may carry the arrival time (kl) and minutes before shift start (tidlig).
   for (const x of rounds) r[x.date] = { min: x.min, source: "manuell", ...(x.tidlig ? { kl: x.kl, tidlig: x.tidlig } : {}) };
+  for (const d of betDates) {
+    const c = plan[d];
+    if (!r[d] && (c === "SYK" || c === "FRI")) r[d] = { min: 0, source: "vakt", void: c === "SYK" ? "syk" : "fri" };
+  }
   return r;
 }
+const voidTxt = (r) => (r.void === "syk" ? "hun er syk" : "hun har fri");
 
 // Pool betting: the losers' stakes are shared among the winners in proportion
 // to what they staked. If nobody (or everybody) wins, stakes are returned.
@@ -48,6 +57,7 @@ function compute(bets, res) {
     const date = k.split("|")[0], r = res[date];
     const balances = (months[monthOf(date)] ||= fresh());
     if (!r) { group.forEach((b) => { b.payout = null; balances[b.profile] -= b.stake; }); continue; }
+    if (r.void) { group.forEach((b) => (b.payout = b.stake)); continue; }
     if (group[0].type === "yn") payPool(group, (b) => b.late === (r.min > 0));
     else {
       const best = Math.min(...group.map((b) => Math.abs(b.guess - r.min)));
@@ -58,22 +68,31 @@ function compute(bets, res) {
   return months;
 }
 
+const nextMonth = (m) => { const [y, mo] = m.split("-").map(Number); return mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, "0")}`; };
+
 async function state() {
   const s = store();
-  const [stored, rounds, names, log, resetList] = await Promise.all([
+  const [stored, rounds, names, log, resetList, loans, plan] = await Promise.all([
     all(s, "bet/"),
     all(s, "round/"),
     s.get("profiles", { type: "json" }),
-    all(logStore()),
+    entriesOf(logStore()).then((x) => x.all),
     all(s, "reset/"),
+    all(s, "loan/"),
+    openStore("vakter").get("plan", { type: "json" }).then((p) => p || {}).catch(() => ({})),
   ]);
   // A reset voids that month's bets placed before it; they are kept, just no longer counted.
   const resets = Object.fromEntries(resetList.map((x) => [x.month, x.ts]));
   const bets = stored.filter((b) => !(resets[monthOf(b.date)] >= b.ts));
-  const res = results(rounds, log);
+  const res = results(rounds, log, plan, new Set(bets.map((b) => b.date)));
   const months = compute(bets, res);
+  // Loans: +LOAN in the month taken, −REPAY from the next month's start.
+  for (const l of loans) {
+    (months[l.month] ||= fresh())[l.profile] += l.amount || LOAN;
+    (months[nextMonth(l.month)] ||= fresh())[l.profile] -= l.repay || REPAY;
+  }
   const balances = months[monthOf(todayOslo())];
-  return { bets, res, months, balances, resets, names: { ...DEFAULT_NAMES, ...(names || {}) } };
+  return { bets, res, months, balances, resets, loans, plan, names: { ...DEFAULT_NAMES, ...(names || {}) } };
 }
 
 // Push keys are made on first use and kept in the store, so no setup is needed in Netlify.
@@ -133,11 +152,11 @@ async function notifyResult(s, date) {
     return `${names[p]} ${n > 0 ? "+" + n : n < 0 ? "−" + -n : "±0"}`;
   });
   return push(s, {
-    title: `Resultat ${dayLabel(date)}: ${r.min > 0 ? r.min + " min for sent" : "i tide"}`,
-    body: parts.join(" · "),
+    title: `Resultat ${dayLabel(date)}: ${r.void ? voidTxt(r) : r.min > 0 ? r.min + " min for sent" : "i tide"}`,
+    body: r.void ? "Alle får innsatsen tilbake." : parts.join(" · "),
     tag: "result-" + date,
     kind: "result",
   });
 }
 
-export { KINDS, kinds, dayLabel, push, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, all, state, vapid, subKey, notifyBet, notifyResult };
+export { LOAN, REPAY, LOAN_BELOW, KINDS, kinds, dayLabel, push, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, all, state, vapid, subKey, notifyBet, notifyResult };

@@ -154,7 +154,7 @@ main{position:relative}
 </head>
 <body>
 <main>
- <nav><a href="/#logg" data-page="0">Logg</a><a href="/#betting" data-page="1" aria-current="page">Betting</a></nav>
+ <nav><a href="/#logg" data-page="0">Logg</a><a href="/#betting" data-page="1" aria-current="page">Betting</a><a href="/#statistikk" data-page="2">Statistikk</a></nav>
  <button class="gear" id="gear" type="button" aria-label="Innstillinger" title="Innstillinger"></button>
  <label class="who" title="Bytt spiller"><span class="sr">Du spiller som</span><span id="whoName">…</span><select id="whoSel" aria-label="Bytt spiller"></select></label>
  <h1>Betting</h1>
@@ -162,6 +162,7 @@ main{position:relative}
  <section>
   <div class="players" id="players"></div>
   <div class="me"><span id="meTxt"></span></div>
+  <div class="loan" id="loanRow" hidden><p id="loanTxt"></p><button class="ghost" id="loanBtn" type="button" hidden></button></div>
   <button class="pushHint" id="pushHint" type="button" hidden>🔕 Varsler er av · <u>Slå på</u></button>
  </section>
 
@@ -174,6 +175,7 @@ main{position:relative}
   <div class="seg" id="settleRow" hidden><button class="ghost" id="late" type="button">Hun kom for sent</button><button class="ghost" id="onTime" type="button">Hun kom i tide</button></div>
   <button class="link" id="reopen" type="button" hidden>Angre «i tide» og åpne dagen igjen</button>
  </div>
+ <div class="bordWrap" id="bordWrap"><div id="bord"></div></div>
 
  <div id="betting">
   <div class="card betCard">
@@ -210,10 +212,10 @@ main{position:relative}
  <details class="fold" id="fRes"><summary>Resultater og stilling <small id="resSum"></small></summary><div class="foldBody">
   <label>Måned<select id="month"></select></label>
   <div id="standings"></div>
+  <div id="aaret"></div>
   <div id="hist"></div>
   <button class="link" id="reset" type="button" hidden>Nullstill alle bets denne måneden</button>
  </div></details>
-
 
 
  <details class="fold" id="fRules"><summary>Slik fungerer det</summary><div class="foldBody"><div class="note">
@@ -224,7 +226,7 @@ main{position:relative}
   <p>Er du alene om et bet, eller traff alle (eller ingen), får alle innsatsen tilbake.</p>
  </div></div></details>
 
- <p class="stat"><span id="stat">Kobler til …</span> Sveip til høyre for loggen.</p>
+ <p class="stat"><span id="stat">Kobler til …</span> Sveip til høyre for loggen, til venstre for statistikk.</p>
  <div class="sheet" id="sheet" hidden><div class="sheetBox" role="dialog" aria-modal="true" aria-labelledby="sheetT">
   <div class="sheetHead"><b id="sheetT">Innstillinger</b><button type="button" class="sheetX" id="sheetX" aria-label="Lukk">✕</button></div>
   <p class="sheetSub">Profil: <b id="setSum"></b></p>
@@ -237,6 +239,11 @@ main{position:relative}
    <button class="go" type="button" id="tSave" disabled>Lagre turnus</button>
    <p id="tMsg" role="status"></p>
   </div>
+  <div class="push" id="gipsBox"><div class="turnHead"><b>Gipsdag</b></div>
+   <p>Én dag i året blir hele appen gips. Velg dagen, eller la feltet stå tomt for å slå det av. Prøv det nå med ?tema=gips.</p>
+   <div class="row"><input type="date" id="gipsDato" aria-label="Gipsdag"><button class="go" type="button" id="gipsSave">Lagre</button></div>
+   <p id="gipsMsg" role="status"></p>
+  </div>
   <div class="me"><button class="link" id="setDef" type="button">Bruk som standard på denne enheten</button><button class="link" id="rename" type="button">Endre navn</button></div>
  </div></div>
 </main>
@@ -244,6 +251,7 @@ main{position:relative}
 
 <script src="/vakter.js"></script>
 <script src="/poll.js"></script>
+<script src="/bord.js"></script>
 <script>
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/betting',PKEY='forsinkelseslogg:profil',CKEY='forsinkelseslogg:kode';
@@ -260,7 +268,7 @@ const dayName=s=>s===today?'i dag':parse(s).toLocaleDateString('nb-NO',{weekday:
 const cr=n=>Math.round(n)+U;
 const name=id=>(data.profiles.find(p=>p.id===id)||{name:id}).name;
 const signed=n=>{n=Math.round(n);const s=el('span',n>0?'pos':n<0?'neg':'zero',(n>0?'+':'')+n+U);return s};
-const resTxt=r=>r.min>0?r.min+' min for sent':'i tide';
+const resTxt=r=>r.void?(r.void==='syk'?'syk, innsatsen tilbake':'fri, innsatsen tilbake'):r.min>0?r.min+' min for sent':'i tide';
 
 const price=t=>(data.stakes||{yn:5,min:10})[t];
 const STEPS=[5,10,20,50];
@@ -311,11 +319,12 @@ function vaktPlan(){
 function vakt(d){
  const box=$('vakt');if(!d||!window.vaktFor){box.hidden=true;return}
  vaktPlan();
- const v=vaktFor(d),keys=Object.keys(window.VAKTER||{}).concat(Object.keys(window.VAKTPLAN||{})).sort();
+ const v=vaktFor(d),st=window.vaktStatus?vaktStatus(d):'',keys=Object.keys(window.VAKTER||{}).concat(Object.keys(window.VAKTPLAN||{})).sort();
  const ukjent=!v&&(!keys.length||d>keys[keys.length-1]);
  const dag=d===today?'i dag':parse(d).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short'});
  box.hidden=false;box.classList.toggle('fri',!v);
  $('vLbl').textContent='Vakt '+dag;
+ if(st){$('vCode').textContent=st==='syk'?'Syk':'Fri';$('vStart').textContent=st==='syk'?'Meldt syk':'Fri eller byttet bort';$('vTid').textContent='Bets denne dagen får innsatsen tilbake.';return}
  if(v){$('vCode').textContent=v.kode;$('vStart').textContent='Oppmøte '+v.start;$('vTid').textContent=v.start+'–'+v.slutt}
  else{$('vCode').textContent=ukjent?'?':'Fri';$('vStart').textContent=ukjent?'Turnus ikke lagt inn':'Ingen vakt';$('vTid').textContent=ukjent?'Legg inn under Innstillinger → Turnus':'Fri eller ikke på jobb denne dagen'}
 }
@@ -438,11 +447,11 @@ showTab();
 // Settings (profile and notifications) open from the gear in the top left corner.
 // Turnus: one dropdown per day for the chosen month (next month by default). Saved days override
 // the built-in schedule in vakter.js; a day set back to the built-in value drops its override.
-const TCODES=['','D','DPOL1','DPOL3','DPOL5','FAGD','A1','A2'];
+const TCODES=['','D','DPOL1','DPOL3','DPOL5','FAGD','A1','A2','SYK'];
 let tMon=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth()+1,1)})(),tEdit={};
 const tIso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 let tPick='D';
-TCODES.forEach(c=>{const b=el('button',null,c||'Fri');b.type='button';b.dataset.c=c;b.onclick=()=>{tPick=c;pal()};$('tPal').appendChild(b)});
+TCODES.forEach(c=>{const b=el('button',null,c===''?'Fri':c==='SYK'?'Syk':c);b.type='button';b.dataset.c=c;b.onclick=()=>{tPick=c;pal()};$('tPal').appendChild(b)});
 const pal=()=>$('tPal').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===tPick));
 pal();
 function turnus(){
@@ -450,19 +459,19 @@ function turnus(){
  const box=$('tDays'),now=tIso(new Date());box.replaceChildren(...['man','tir','ons','tor','fre','lør','søn'].map(n=>el('small',null,n)));
  for(let i=(tMon.getDay()+6)%7;i>0;i--)box.appendChild(el('span'));
  for(let d=new Date(tMon);d.getMonth()===tMon.getMonth();d.setDate(d.getDate()+1)){
-  const k=tIso(d),v=k in tEdit?tEdit[k]:vaktKode(k),b=el('button',(v?'on':'')+(v!==vaktKode(k)?' chg':'')+(k===now?' today':''));
+  const k=tIso(d),v=k in tEdit?tEdit[k]:vaktRaw(k),b=el('button',(v?'on':'')+(v!==vaktRaw(k)?' chg':'')+(k===now?' today':''));
   b.type='button';b.append(el('span',null,d.getDate()),el('b',null,v||'·'));
   b.setAttribute('aria-label',d.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'})+': '+(v||'fri'));
-  b.onclick=()=>{tEdit[k]=(k in tEdit?tEdit[k]:vaktKode(k))===tPick&&tPick?'':tPick;turnus()};
+  b.onclick=()=>{tEdit[k]=(k in tEdit?tEdit[k]:vaktRaw(k))===tPick&&tPick?'':tPick;turnus()};
   box.appendChild(b);
  }
- $('tSave').disabled=!Object.keys(tEdit).some(x=>tEdit[x]!==vaktKode(x));
+ $('tSave').disabled=!Object.keys(tEdit).some(x=>tEdit[x]!==vaktRaw(x));
 }
 $('tPrev').onclick=()=>{tMon=new Date(tMon.getFullYear(),tMon.getMonth()-1,1);turnus()};
 $('tNext').onclick=()=>{tMon=new Date(tMon.getFullYear(),tMon.getMonth()+1,1);turnus()};
 $('tSave').onclick=async()=>{
  const days={};
- for(const[k,v]of Object.entries(tEdit)){if(v===vaktKode(k))continue;days[k]=v===(VAKTER[k]||'')?'':(v||'FRI')}
+ for(const[k,v]of Object.entries(tEdit)){if(v===vaktRaw(k))continue;days[k]=v===(VAKTER[k]||'')?'':(v||'FRI')}
  if(!Object.keys(days).length)return;
  $('tSave').disabled=true;$('tMsg').textContent='Lagrer …';
  try{
@@ -476,7 +485,19 @@ $('tSave').onclick=async()=>{
  }catch(e){$('tMsg').textContent=e.message||'Kunne ikke lagre.'}
  turnus();
 };
-function openSettings(){$('sheet').hidden=false;lastVakter().then(turnus)}
+function openSettings(){$('sheet').hidden=false;lastVakter().then(turnus);gipsLoad()}
+// K6: the yearly «gipsdag» (stored as MM-DD, shown as a date this year).
+async function gipsLoad(){try{const j=await (await fetch('/api/vakter',{cache:'no-store'})).json();$('gipsDato').value=j.gipsdag?new Date().getFullYear()+'-'+j.gipsdag:''}catch(e){}}
+$('gipsSave').onclick=async()=>{
+ const v=$('gipsDato').value,md=v?v.slice(5):'';$('gipsMsg').textContent='Lagrer …';
+ try{
+  const send=()=>fetch('/api/vakter',{method:'PUT',headers:Object.assign({'content-type':'application/json'},code?{'x-skrivekode':code}:{}),body:JSON.stringify({gipsdag:md})});
+  let r=await send();
+  while(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(!c)throw new Error('Trenger skrivekode.');code=c.trim();ls.set(CKEY,code);r=await send()}
+  if(!r.ok)throw new Error('Kunne ikke lagre.');
+  $('gipsMsg').textContent=md?'Lagret. Gipsdag hvert år '+new Date(2000,+md.slice(0,2)-1,+md.slice(3)).toLocaleDateString('nb-NO',{day:'numeric',month:'long'})+'.':'Gipsdag er slått av.';
+ }catch(e){$('gipsMsg').textContent=e.message||'Kunne ikke lagre.'}
+};
 const closeSettings=()=>{$('sheet').hidden=true};
 window.openSettings=openSettings;
 $('gear').onclick=openSettings;$('sheetX').onclick=closeSettings;
@@ -485,6 +506,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings()});
 $('pushHint').onclick=openSettings;
 function render(){
  const P=$('players');P.replaceChildren();
+ const champ=aaret().champ;
  data.profiles.forEach(p=>{
   const b=el('div','player');b.setAttribute('aria-pressed',p.id===me);
   // a5: a small tower of chips that follows the balance (one chip per 20 cr, max 8).
@@ -495,10 +517,13 @@ function render(){
     let base=1;while(base*(base+1)/2<n)base++;for(let w=base;w>=1;w--){if(k<=0)break;const r=el('span','hrow');for(let j=0;j<Math.min(w,k);j++)r.appendChild(el('i'));k-=w;h.appendChild(r)}
     tw.appendChild(h)}
   }else{tw=el('span','tower');const nC=Math.max(0,Math.min(8,Math.round(p.balance/20)));for(let i=0;i<nC;i++)tw.appendChild(el('i'))}
-  b.append(el('span',null,(p.id===def?'★ ':'')+p.name),tw,el('b',null,Math.round(p.balance)),el('small',null,UL));
+  const ln=myLoan(p.id);
+  b.append(el('span',null,(p.id===champ?'🏆 ':'')+(p.id===def?'★ ':'')+p.name),tw,el('b',null,Math.round(p.balance)),el('small',null,UL));
+  if(ln)b.appendChild(el('small','gjeld','Gjeld '+(ln.repay||25)));
   P.appendChild(b);
  });
  $('meTxt').textContent=data.month?'Saldo for '+monthName(data.month,false)+'.':'';
+ loanUI();
  // Name badge in the corner switches player.
  $('whoName').textContent=name(me);const W=$('whoSel');
  W.replaceChildren(...data.profiles.map(p=>{const o=el('option',null,p.name+(p.id===def?' (standard)':''));o.value=p.id;o.selected=p.id===me;return o}));
@@ -507,12 +532,13 @@ function render(){
 
  quickDates();
  const d=$('date').value,res=data.results[d],bets=data.bets.filter(b=>b.date===d);
+ if(window.bord&&data.profiles.length)bord($('bord'),{profiles:data.profiles,me,date:d,bets,res,unit:U.trim(),resTxt,guessOf:b=>b.guess??(b.profile===me?ls.get('forsinkelseslogg:gjett:'+b.date+':'+me)||null:null)});
  const yn=bets.filter(b=>b.type==='yn'),mn=bets.filter(b=>b.type==='min');
  const myYn=yn.find(b=>b.profile===me),myMin=mn.find(b=>b.profile===me);
  const past=d&&today&&d<today;
  vakt(d);
  $('status').replaceChildren();
- if(res){$('status').append('Avgjort: ',el('b',null,resTxt(res)),res.source==='logg'?' (fra loggen).':'.')}
+ if(res){$('status').append('Avgjort: ',el('b',null,resTxt(res)),res.source==='logg'?' (fra loggen).':res.source==='vakt'?' (markert i turnusen).':'.')}
  else if(past)$('status').textContent='Ikke avgjort ennå. Nye bets er stengt for dager som har vært.';
  else $('status').textContent=d===today?'Åpen for bets. Avgjøres når forsinkelsen registreres i loggen, eller når noen trykker «i tide».':'Åpen for bets.';
  $('settleRow').hidden=!!res||!d||!today||d>today;
@@ -550,7 +576,7 @@ function render(){
  });
 
  // Month picker: every month that has a balance, newest first.
- const M=$('month'),list=Object.keys(data.months||{}).sort().reverse();
+ const M=$('month'),list=Object.keys(data.months||{}).filter(m=>m<=data.month||data.bets.some(b=>b.date.startsWith(m))).sort().reverse();
  if(!list.includes(selMonth))selMonth=data.month;
  M.replaceChildren(...list.map(m=>{const o=el('option',null,monthName(m,true));o.value=m;o.selected=m===selMonth;return o}));
  const cur=selMonth===data.month,bal=(data.months||{})[selMonth]||{};
@@ -559,12 +585,15 @@ function render(){
  // Leader change: slide rows from their old place.
  const order=ranked.map(x=>x.p.id),moved=prevOrder&&prevOrder.join()!==order.join()&&prevMonth===selMonth;
  ranked.forEach((x,i)=>{const r=el('div','rank');
-  if(moved&&window.fx){const was=prevOrder.indexOf(x.p.id);if(was>=0&&was!==i)fx.slide(r,(was-i));if(i===0&&was!==0)r.classList.add('fxnewlead')}r.append(el('i',null,(i+1)+'.'),el('span',null,x.p.name+(i===0&&!cur&&x.v>ranked[1].v?' 🏆':'')),el('b',null,Math.round(x.v)+U));S.appendChild(r)});
+  if(moved&&window.fx){const was=prevOrder.indexOf(x.p.id);if(was>=0&&was!==i)fx.slide(r,(was-i));if(i===0&&was!==0)r.classList.add('fxnewlead')}
+  const lt=(data.loans||[]).some(l=>l.month===selMonth&&l.profile===x.p.id)?' (lån)':'';
+  r.append(el('i',null,(i+1)+'.'),el('span',null,x.p.name+lt+(i===0&&!cur&&x.v>ranked[1].v?' 🏆':'')),el('b',null,Math.round(x.v)+U));S.appendChild(r)});
  prevOrder=order;prevMonth=selMonth;
  const lead=ranked[0];$('resSum').textContent=lead?(cur?'Leder: ':'Vinner: ')+lead.p.name:'';
  const rs=(data.resets||{})[selMonth];
  S.appendChild(el('p','sub',(cur?'Stillingen så langt. Åpne bets er trukket fra.':'Sluttresultat for '+monthName(selMonth,false)+'.')+(rs?' Nullstilt '+when(rs)+'.':'')));
 
+ aaretUI();
  const H=$('hist');H.replaceChildren();
  const days=[...new Set(data.bets.filter(b=>data.results[b.date]&&b.date.slice(0,7)===selMonth&&b.date!==d).map(b=>b.date))].sort().reverse();
  if(!days.length)H.appendChild(el('p','empty','Ingen avgjorte dager denne måneden.'));
@@ -584,7 +613,7 @@ function jackpot(){
  const anim=window.fx&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
  const chipsIn=()=>{const pb=document.querySelector('.player[aria-pressed=true]');if(pb&&anim){fx.flash(pb);fx.landChips(pb,Math.round(won/5))}};
  // Winner reveal (vinner.js) for the latest newly settled day that had bets; each phone sees it once.
- const day=fresh.filter(x=>data.bets.some(b=>b.date===x)).sort().pop();
+ const day=fresh.filter(x=>!data.results[x].void&&data.bets.some(b=>b.date===x)).sort().pop();
  // Mirakel (mirakel.js): a day settled «i tide» ≥5 min before shift start. The winner reveal waits for it.
  const mir=fresh.filter(x=>(data.results[x]||{}).tidlig>=5).sort().pop();
  if(mir&&window.mirakel){const r=data.results[mir];if(mirakel({tidlig:r.tidlig,kl:r.kl,dato:mir,onClose:()=>{if(day)showWin()}}))return}
@@ -615,6 +644,42 @@ function dayBlock(d,res,bets){
   r.append(a,b.payout===b.stake?el('span','zero','Tilbake'):signed(b.payout-b.stake));if(isAdmin())r.appendChild(delBtn(b));w.appendChild(r);
  });
  return w;
+}
+// G3: the bank. Once a month, when nearly broke: +20 now, 25 taken from next month's start.
+const myLoan=(p,m)=>(data.loans||[]).find(l=>l.profile===p&&l.month===(m||data.month));
+function loanUI(){
+ const L=data.loan||{amount:20,repay:25,below:10},bal=(data.profiles.find(p=>p.id===me)||{}).balance??100,ln=myLoan(me);
+ const can=!ln&&bal<L.below&&data.month;
+ $('loanRow').hidden=!ln&&!can;
+ $('loanBtn').hidden=!can;$('loanBtn').textContent='Lån '+L.amount+U+' av banken';
+ $('loanTxt').textContent=ln?name(me)+' har lånt '+ln.amount+U+' denne måneden. '+ln.repay+' trekkes fra startkapitalen neste måned. Banken er tålmodig, men ikke snill.'
+  :can?'Nesten tom? Banken låner deg '+L.amount+U+' én gang i måneden. Du betaler tilbake '+L.repay+' fra neste måneds start.':'';
+}
+$('loanBtn').onclick=()=>{const L=data.loan||{amount:20,repay:25};if(confirm('Låne '+L.amount+U+'? '+L.repay+' trekkes fra '+name(me)+' sin startkapital neste måned.'))run(async()=>{await api('POST',{action:'loan',profile:me})})};
+// G1: the year's table, all monthly rounds added up. The winner carries a trophy in December
+// (this year so far) and January (last year).
+function aaret(y){
+ const mon=data.month||'',yr=y||mon.slice(0,4),start=data.start||100,months=data.months||{};
+ const rows=data.profiles.map(p=>({p,net:0,wins:0}));
+ Object.keys(months).filter(m=>m.startsWith(yr)&&m<=mon).forEach(m=>{
+  const bal=months[m];rows.forEach(r=>r.net+=(bal[r.p.id]??start)-start);
+  if(m<mon||!y&&false){const a=Object.entries(bal).sort((x,z)=>z[1]-x[1]);if(a.length>1&&a[0][1]>a[1][1]){const w=rows.find(r=>r.p.id===a[0][0]);if(w)w.wins++}}
+ });
+ rows.sort((a,b)=>b.net-a.net);
+ const mo=mon.slice(5);let champ=null;
+ if(!y){
+  if(mo==='12'){const a=rows;if(a.length>1&&a[0].net>a[1].net&&a[0].net>0)champ=a[0].p.id}
+  else if(mo==='01'){const a=aaret(String(+mon.slice(0,4)-1)).rows;if(a.length>1&&a[0].net>a[1].net&&a[0].net>0)champ=a[0].p.id}
+ }
+ return {yr,rows,champ};
+}
+function aaretUI(){
+ const A=$('aaret');A.replaceChildren();if(!data.profiles.length||!data.month)return;
+ const {yr,rows,champ}=aaret();
+ A.appendChild(el('h3','aarH','Årets spiller '+yr));
+ rows.forEach((r,i)=>{const x=el('div','rank');const n=Math.round(r.net);
+  x.append(el('i',null,(i+1)+'.'),el('span',null,(r.p.id===champ?'🏆 ':'')+r.p.name+(r.wins?' · '+r.wins+(r.wins===1?' måned':' måneder')+' vunnet':'')),el('b',n>0?'pos':n<0?'neg':'zero',(n>0?'+':'')+n+U));A.appendChild(x)});
+ A.appendChild(el('p','sub','Alle månedsrundene i '+yr+' lagt sammen. Vinneren får pokal ved navnet i desember og januar.'));
 }
 load();
 startPoll(load,1);

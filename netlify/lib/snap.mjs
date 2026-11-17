@@ -40,3 +40,50 @@ export async function listAll(s, prefix) {
   await s.setJSON(key, { rev, items });
   return items;
 }
+
+// J5: yearly archive for the log stores (forsinkelser, lunsj). When a year is over, its entries
+// are moved into one blob per year ("arkiv/YYYY" = { year, arkiv: [entries] }), so rebuilding the
+// list after a write reads one blob per old year instead of one per entry. The archive is written
+// and read back before any single entry is deleted. Clients still get every entry.
+const thisYear = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Oslo" }).format(new Date()).slice(0, 4);
+const ARK = "arkiv/";
+
+// Every entry, archived or not. `loose` are the ones still stored one per blob.
+export async function entriesOf(s) {
+  const raw = await listAll(s), all = [], loose = [];
+  for (const x of raw) {
+    if (x && Array.isArray(x.arkiv)) all.push(...x.arkiv);
+    else if (x && x.id && x.date) { all.push(x); loose.push(x); }
+  }
+  return { all, loose };
+}
+
+// Move loose entries from earlier years into their year's archive. Cheap no-op most of the year.
+export async function archiveOld(s, loose) {
+  const now = thisYear(), byYear = {};
+  for (const e of loose) if (e.date.slice(0, 4) < now) (byYear[e.date.slice(0, 4)] ||= []).push(e);
+  for (const [y, list] of Object.entries(byYear)) {
+    const key = ARK + y;
+    const cur = (await s.get(key, { type: "json" })) || { year: y, arkiv: [] };
+    const have = new Set(cur.arkiv.map((e) => e.id));
+    const merged = cur.arkiv.concat(list.filter((e) => !have.has(e.id)));
+    await s.setJSON(key, { year: y, arkiv: merged });
+    const back = await s.get(key, { type: "json" });
+    if (!back || !Array.isArray(back.arkiv) || back.arkiv.length !== merged.length) continue;
+    for (let i = 0; i < list.length; i += 10) await Promise.all(list.slice(i, i + 10).map((e) => s.delete(e.id)));
+  }
+}
+
+// An archived entry by id, for edits and deletes: { key, doc, entry } or null.
+export async function findArchived(s, id) {
+  const { blobs } = await s.list({ prefix: ARK });
+  for (const b of blobs) {
+    const doc = await s.get(b.key, { type: "json" });
+    const entry = doc && Array.isArray(doc.arkiv) ? doc.arkiv.find((e) => e.id === id) : null;
+    if (entry) return { key: b.key, doc, entry };
+  }
+  return null;
+}
+export async function dropArchived(s, hit) {
+  await s.setJSON(hit.key, { ...hit.doc, arkiv: hit.doc.arkiv.filter((e) => e.id !== hit.entry.id) });
+}

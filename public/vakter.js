@@ -19,12 +19,29 @@ window.VAKTER = {
   "2027-01-01": "A2", "2027-01-02": "A2", "2027-01-03": "D", "2027-01-05": "D", "2027-01-06": "D",
   "2027-01-07": "A2", "2027-01-08": "D",
 };
-// Vakter lagt inn under Innstillinger (/api/vakter) overstyrer lista over. "FRI" = fri.
+// Vakter lagt inn under Innstillinger (/api/vakter) overstyrer lista over. "FRI" = fri, "SYK" = syk.
 window.VAKTPLAN = window.VAKTPLAN || {};
 window.vaktKode = (date) => {
   const o = window.VAKTPLAN[date];
+  if (o) return o === "FRI" || o === "SYK" ? "" : o;
+  return window.VAKTER[date] || "";
+};
+// What the turnus editor shows: like vaktKode, but a sick day shows as "SYK".
+window.vaktRaw = (date) => {
+  const o = window.VAKTPLAN[date];
   if (o) return o === "FRI" ? "" : o;
   return window.VAKTER[date] || "";
+};
+// G5: "syk" for a day marked sick, "fri" for a planned shift that was taken off or swapped away.
+window.vaktStatus = (date) => {
+  const o = window.VAKTPLAN[date];
+  return o === "SYK" ? "syk" : o === "FRI" && window.VAKTER[date] ? "fri" : "";
+};
+// J1: the last date with a planned shift (built-in rota or Innstillinger), or "".
+window.sisteVakt = () => {
+  const p = window.VAKTPLAN, ks = Object.keys(window.VAKTER).filter((d) => !p[d] || (p[d] !== "FRI" && p[d] !== "SYK"));
+  Object.keys(p).forEach((d) => { if (p[d] !== "FRI" && p[d] !== "SYK") ks.push(d); });
+  return ks.sort().pop() || "";
 };
 window.vaktFor = (date) => {
   const k = window.vaktKode(date), t = k && window.VAKTKODER[k];

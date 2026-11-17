@@ -24,6 +24,22 @@
     else if (md >= 620 && md <= 810) t = "sommer";
     else if (md >= 1024 && md <= 1031) t = "halloween";
   }
+  // K6: «gips» (plaster) is only forced (?tema=gips) or switched on by the yearly gipsdag (settTema).
+  window.settTema = (name) => {
+    const wins = [window];
+    try { const top = window.parent; if (top !== window) { wins.push(top); ["f0", "f1", "f2"].forEach((id) => { const f = top.document.getElementById(id); if (f && f.contentWindow !== window) wins.push(f.contentWindow); }); } } catch (e) {}
+    wins.forEach((w) => {
+      try {
+        if (w.TEMA === name) return;
+        w.TEMA = name; w.document.documentElement.classList.add("tema", name);
+        if (name === "gips" && !w.document.getElementById("gips-font")) {
+          const l = w.document.createElement("link"); l.id = "gips-font"; l.rel = "stylesheet";
+          l.href = "https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap"; w.document.head.appendChild(l);
+        }
+      } catch (e) {}
+    });
+  };
+  if (t === "gips") return window.settTema("gips");
   if (!["paske", "mai17", "sommer", "halloween"].includes(t)) return;
   window.TEMA = t;
   document.documentElement.classList.add("tema", t);

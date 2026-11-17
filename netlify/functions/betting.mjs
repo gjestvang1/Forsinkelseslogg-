@@ -1,5 +1,5 @@
 import { openStore, revOf } from "../lib/snap.mjs";
-import { kinds, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, state, vapid, subKey, notifyBet, notifyResult } from "../lib/betting.mjs";
+import { LOAN, REPAY, LOAN_BELOW, kinds, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, state, vapid, subKey, notifyBet, notifyResult } from "../lib/betting.mjs";
 
 // Betting on the delay log. Bets, profile names and manual results live in
 // their own store; the delay entries are read from the log's store so a
@@ -25,14 +25,14 @@ export default async (req) => {
 
   if (req.method === "GET") {
     // Unchanged since the page's last load: a tiny "same" instead of everything.
-    const v = (await revOf(s)) + "." + (await revOf(openStore("forsinkelser"))) + "." + todayOslo();
+    const v = (await revOf(s)) + "." + (await revOf(openStore("forsinkelser"))) + "." + (await revOf(openStore("vakter"))) + "." + todayOslo();
     if (new URL(req.url).searchParams.get("v") === v) return json({ same: true, v });
-    const { bets, res, months, balances, resets, names } = await state();
+    const { bets, res, months, balances, resets, names, loans } = await state();
     // Guesses stay hidden until the day is settled, so nobody can undercut by one minute.
     const shown = bets.map((b) => (res[b.date] || b.type !== "min" ? b : { ...b, guess: null }));
     const profiles = PROFILES.map((id) => ({ id, name: names[id], balance: balances[id] }));
     const vapidKey = (await vapid(s)).publicKey;
-    return json({ v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN });
+    return json({ v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN, loans, loan: { amount: LOAN, repay: REPAY, below: LOAN_BELOW } });
   }
 
   // Turning notifications on or off only touches this device, so it needs no write code.
@@ -54,7 +54,7 @@ export default async (req) => {
   if (req.method === "POST") {
     let b;
     try { b = await req.json(); } catch { return json({ error: "Ugyldig data" }, 400); }
-    const { bets, res, months, names } = await state();
+    const { bets, res, months, names, loans, plan } = await state();
 
     if (b.action === "rename") {
       const name = String(b.name || "").trim().slice(0, 20);
@@ -67,6 +67,16 @@ export default async (req) => {
       // Only the running month can be reset; earlier months stay as they ended.
       const month = monthOf(todayOslo());
       await s.setJSON("reset/" + month, { month, ts: Date.now() });
+      return json({ ok: true });
+    }
+
+    if (b.action === "loan") {
+      // G3: once a month, only when nearly broke. Paid back with interest from next month's start.
+      if (!PROFILES.includes(b.profile)) return json({ error: "Ukjent profil" }, 400);
+      const month = monthOf(todayOslo()), bal = (months[month] || fresh())[b.profile];
+      if (loans.some((l) => l.month === month && l.profile === b.profile)) return json({ error: "Banken låner bare ut én gang i måneden." }, 409);
+      if (bal >= LOAN_BELOW) return json({ error: `Banken låner bare ut til den som har under ${LOAN_BELOW} igjen.` }, 400);
+      await s.setJSON(`loan/${month}/${b.profile}`, { month, profile: b.profile, amount: LOAN, repay: REPAY, ts: Date.now() });
       return json({ ok: true });
     }
 
@@ -95,6 +105,7 @@ export default async (req) => {
       if (!["yn", "min"].includes(b.type)) return json({ error: "Ukjent bettype" }, 400);
       if (b.date < todayOslo()) return json({ error: "Kan ikke bette på en dag som har vært" }, 400);
       if (res[b.date]) return json({ error: "Dagen er allerede avgjort" }, 409);
+      if (plan[b.date] === "SYK" || plan[b.date] === "FRI") return json({ error: plan[b.date] === "SYK" ? "Hun er meldt syk den dagen." : "Hun har fri den dagen." }, 400);
       const stake = b.stake == null || b.stake === "" ? STAKES[b.type] : Number(b.stake);
       if (!Number.isInteger(stake) || stake < 1) return json({ error: "Innsatsen må være et helt tall, minst 1" }, 400);
       const key = `bet/${b.date}/${b.profile}/${b.type}`;
