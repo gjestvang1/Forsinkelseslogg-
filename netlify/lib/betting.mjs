@@ -20,7 +20,8 @@ const all = (s, prefix) => listAll(s, prefix);
 function results(rounds, log) {
   const r = {};
   for (const e of log) r[e.date] = { min: (r[e.date]?.min || 0) + e.min, source: "logg" };
-  for (const x of rounds) r[x.date] = { min: x.min, source: "manuell" };
+  // A hand-set "on time" may carry the arrival time (kl) and minutes before shift start (tidlig).
+  for (const x of rounds) r[x.date] = { min: x.min, source: "manuell", ...(x.tidlig ? { kl: x.kl, tidlig: x.tidlig } : {}) };
   return r;
 }
 

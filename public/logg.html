@@ -76,6 +76,7 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .vakt .t{flex:1;line-height:1.25}.vakt .t small{color:var(--mute);display:block;font-size:.8rem}.vakt .t b{font-size:1.05rem}
 .nowbtn{width:100%;min-height:54px;border-radius:999px;border:0;background:var(--accent);color:#0B2F25;font-weight:800;font-size:1.05rem;cursor:pointer}
 .nowbtn small{display:block;font-weight:600;font-size:.78rem;opacity:.8}
+.nowbtn.tide{margin-top:8px;background:transparent;color:var(--good);border:2px solid var(--good);min-height:46px;font-size:.98rem}
 .vaktok{margin:0;color:var(--good);font-size:.9rem;text-align:center}
 #vaktBox{display:grid;gap:10px}#vaktBox[hidden]{display:none}
 .hint{margin:0;color:var(--mute);font-size:.82rem}
@@ -178,6 +179,7 @@ main{position:relative}
    <div class="vakt"><div class="code" id="vCode"></div><div class="t"><small id="vLbl">Dagens vakt</small><b id="vStart"></b><small id="vTid"></small></div></div>
    <button type="button" class="nowbtn" id="vNow" hidden></button>
    <p class="vaktok" id="vOk" hidden></p>
+   <button type="button" class="nowbtn tide" id="vTide" hidden></button>
   </div>
   <p class="hint" id="hint">Trykk på minuttene for å lagre for valgt dato.</p>
   <div class="chips" id="chips"></div>
@@ -305,6 +307,8 @@ async function load(){
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
  render();
  betBadge();
+ // Månedsrapport (maaned.js) at month change.
+ if(loaded){window.rapportData={entries,lunch,betting:betData};if(window.rapport)rapport(window.rapportData)}
 }
 // Show on the Betting tab how many bets are placed for today.
 function betBadge(){
@@ -354,9 +358,26 @@ function vakt(){
  $('vNow').hidden=!nowMin;
  if(nowMin)$('vNow').replaceChildren('Hun kom nå ('+pad(n.getHours())+':'+pad(n.getMinutes())+') · '+fmt(nowMin),el('small',null,'Trykk for å lagre'));
  $('vOk').hidden=!(today&&!done&&late<=0);
+ // Before shift start: one tap settles today as «i tide» (with the arrival time, so ≥5 min early is a Mirakel).
+ const settled=betData&&betData.results&&betData.results[d],tn=!done&&!settled&&window.tidligNaa?tidligNaa(d):null;
+ $('vTide').hidden=!(tn&&tn.tidlig<=60);
+ if(tn)$('vTide').replaceChildren('Hun er her nå ('+tn.kl+') · i tide',el('small',null,tn.tidlig+' min før vakta'));
  $('vOk').textContent='Vakta starter '+v.start+'. Ikke for sent ennå.';
  $('hint').textContent=nowMin?'Eller trykk på minuttene for å lagre for valgt dato.':'Trykk på minuttene for å lagre for valgt dato.';
 }
+$('vTide').onclick=async()=>{
+ const d=iso(new Date()),tn=window.tidligNaa&&tidligNaa(d);if(!tn)return vakt();
+ if(!confirm('Avgjøre i dag som «i tide»? Hun kom '+tn.kl+', '+tn.tidlig+' min før vakta.'))return;
+ const post=()=>fetch('/api/betting',{method:'POST',headers:{'content-type':'application/json',...(code?{'x-skrivekode':code}:{})},body:JSON.stringify({action:'settle',date:d,kl:tn.kl,tidlig:tn.tidlig})});
+ try{
+  let r=await post();
+  while(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(!c)return;code=c.trim();saveCode();r=await post()}
+  if(!r.ok){const j=await r.json().catch(()=>({}));$('err').textContent=j.error||'Noe gikk galt. Prøv igjen.';return}
+  $('err').textContent='';
+  if(tn.tidlig>=5&&window.mirakel)mirakel({tidlig:tn.tidlig,kl:tn.kl,dato:d});else if(window.kasinoMsg)kasinoMsg('tide');
+  await load();
+ }catch(e){$('err').textContent='Får ikke kontakt med serveren. Prøv igjen.'}
+};
 $('vNow').onclick=()=>{if(nowMin){const m=nowMin;nowMin=0;spin(m);vakt()}};
 setInterval(()=>{if(!document.hidden)vakt()},20000);
 $('date').addEventListener('change',vakt);
@@ -645,5 +666,7 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch
 <script src="/fx.js" defer></script>
 <script src="/fun.js" defer></script>
 <script src="/runde2.js" defer></script>
+<script src="/mirakel.js" defer></script>
+<script src="/maaned.js" defer></script>
 </body>
 </html>

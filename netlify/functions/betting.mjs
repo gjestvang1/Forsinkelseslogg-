@@ -76,7 +76,11 @@ export default async (req) => {
       // Only "on time" is set by hand; a delay is settled by registering it in the log.
       if (res[b.date]) return json({ error: "Dagen er allerede avgjort" }, 409);
       if (b.date > todayOslo()) return json({ error: "Dagen har ikke vært ennå" }, 400);
-      await s.setJSON("round/" + b.date, { date: b.date, min: 0, ts: Date.now() });
+      const rec = { date: b.date, min: 0, ts: Date.now() };
+      // Optional: she arrived this many minutes before shift start (drives the «Mirakel!» animation).
+      const tidlig = parseInt(b.tidlig, 10);
+      if (b.date === todayOslo() && tidlig >= 1 && tidlig <= 120 && /^\d{2}:\d{2}$/.test(b.kl || "")) Object.assign(rec, { kl: b.kl, tidlig });
+      await s.setJSON("round/" + b.date, rec);
       await notifyResult(s, b.date).catch(() => {});
       return json({ ok: true });
     }

@@ -410,7 +410,7 @@ $('late').onclick=()=>{
   if(saved.firstOfYear&&window.nyttAar)nyttAar();else if(window.kasinoMsg)kasinoMsg('sent');
  });
 };
-$('onTime').onclick=()=>{const d=$('date').value;if(confirm('Avgjøre '+dayName(d)+' som «i tide»?'))run(async()=>{await api('POST',{action:'settle',date:d});if(window.kasinoMsg)kasinoMsg('tide')})};
+$('onTime').onclick=()=>{const d=$('date').value,tn=window.tidligNaa?tidligNaa(d):null;if(confirm('Avgjøre '+dayName(d)+' som «i tide»?'+(tn?' Hun kom '+tn.kl+', '+tn.tidlig+' min før vakta.':'')))run(async()=>{await api('POST',{action:'settle',date:d,...(tn?{kl:tn.kl,tidlig:tn.tidlig}:{})});if(tn&&tn.tidlig>=5&&window.mirakel)mirakel({tidlig:tn.tidlig,kl:tn.kl,dato:d});else if(window.kasinoMsg)kasinoMsg('tide')})};
 $('reopen').onclick=()=>run(()=>api('POST',{action:'reopen',date:$('date').value}));
 $('ynGo').onclick=()=>{
  if(side===null){$('ynErr').textContent='Velg ja eller nei.';return}
@@ -585,6 +585,11 @@ function jackpot(){
  const chipsIn=()=>{const pb=document.querySelector('.player[aria-pressed=true]');if(pb&&anim){fx.flash(pb);fx.landChips(pb,Math.round(won/5))}};
  // Winner reveal (vinner.js) for the latest newly settled day that had bets; each phone sees it once.
  const day=fresh.filter(x=>data.bets.some(b=>b.date===x)).sort().pop();
+ // Mirakel (mirakel.js): a day settled «i tide» ≥5 min before shift start. The winner reveal waits for it.
+ const mir=fresh.filter(x=>(data.results[x]||{}).tidlig>=5).sort().pop();
+ if(mir&&window.mirakel){const r=data.results[mir];if(mirakel({tidlig:r.tidlig,kl:r.kl,dato:mir,onClose:()=>{if(day)showWin()}}))return}
+ showWin();
+ function showWin(){
  if(day&&window.vinner){
   const net={};data.bets.filter(b=>b.date===day).forEach(b=>{net[b.profile]=(net[b.profile]||0)+(b.payout??b.stake)-b.stake});
   const r=data.results[day],t=parse(day).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'});
@@ -595,6 +600,7 @@ function jackpot(){
  if(!anim)return;
  fx.rake();
  if(won>0)setTimeout(()=>{fx.jackpot(Math.round(won));chipsIn()},1100);
+ }
 }
 const monthName=(m,cap)=>{const[y,mo]=m.split('-').map(Number),t=new Date(y,mo-1,1).toLocaleDateString('nb-NO',{month:'long',year:y===new Date().getFullYear()?undefined:'numeric'});return cap?t[0].toUpperCase()+t.slice(1):t};
 $('month').addEventListener('change',e=>{selMonth=e.target.value;render()});
@@ -618,6 +624,7 @@ pushUI().catch(x=>{$("pushTxt").textContent="Feil ved sjekk av varsler: "+(x.mes
 <script src="/swipe.js" defer></script>
 <script src="/fx.js" defer></script>
 <script src="/vinner.js" defer></script>
+<script src="/mirakel.js" defer></script>
 <script src="/fun.js" defer></script>
 </body>
 </html>
