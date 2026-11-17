@@ -35,6 +35,11 @@ h3{font-size:1rem;font-weight:600;margin:0}
 .link{background:none;border:0;color:var(--ink);text-decoration:underline;padding:6px 0;font-size:.9rem}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;margin-bottom:12px}
 .status{font-size:.95rem;margin:0}
+.vakt{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.18)}
+.vakt[hidden]{display:none}
+.vakt .code{min-width:48px;height:48px;padding:0 6px;border-radius:10px;background:#F6EBD0;color:#0B2F25;display:grid;place-items:center;font-weight:900;font-size:1rem;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.vakt.fri .code{background:rgba(0,0,0,.25);color:var(--mute);box-shadow:none;border:1px dashed var(--line)}
+.vakt .t{flex:1;line-height:1.25}.vakt .t small{color:var(--mute);display:block;font-size:.8rem}.vakt .t b{font-size:1rem}
 .status b{color:var(--accent)}
 label{display:grid;gap:4px;font-size:.85rem;color:var(--mute)}
 input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;width:100%;min-width:0;min-height:44px;-webkit-appearance:none;appearance:none}
@@ -164,6 +169,7 @@ main{position:relative}
  <div class="card">
   <div class="quickd" id="quickd" role="group" aria-label="Hurtigvalg dato"></div>
   <label>Eller velg dato<input type="date" id="date"></label>
+  <div class="vakt" id="vakt" hidden><div class="code" id="vCode"></div><div class="t"><small id="vLbl"></small><b id="vStart"></b><small id="vTid"></small></div></div>
   <p class="status" id="status"></p>
   <div class="seg" id="settleRow" hidden><button class="ghost" id="late" type="button">Hun kom for sent</button><button class="ghost" id="onTime" type="button">Hun kom i tide</button></div>
   <button class="link" id="reopen" type="button" hidden>Angre «i tide» og åpne dagen igjen</button>
@@ -294,6 +300,24 @@ async function load(){
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
  render();
  if(data.today)jackpot();
+}
+// Her vakt for valgt bet-dato (samme kilde som «Dagens vakt» på Logg). Overstyringer fra
+// Innstillinger hentes fra Logg-siden (som allerede poller dem), ellers én gang fra /api/vakter.
+let vaktHentet=false;
+function vaktPlan(){
+ try{const w=window.parent.document.getElementById('f0').contentWindow;if(w&&w.VAKTPLAN&&w!==window){window.VAKTPLAN=w.VAKTPLAN;return}}catch(e){}
+ if(!vaktHentet&&window.lastVakter){vaktHentet=true;lastVakter().then(()=>render())}
+}
+function vakt(d){
+ const box=$('vakt');if(!d||!window.vaktFor){box.hidden=true;return}
+ vaktPlan();
+ const v=vaktFor(d),keys=Object.keys(window.VAKTER||{}).concat(Object.keys(window.VAKTPLAN||{})).sort();
+ const ukjent=!v&&(!keys.length||d>keys[keys.length-1]);
+ const dag=d===today?'i dag':parse(d).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short'});
+ box.hidden=false;box.classList.toggle('fri',!v);
+ $('vLbl').textContent='Vakt '+dag;
+ if(v){$('vCode').textContent=v.kode;$('vStart').textContent='Oppmøte '+v.start;$('vTid').textContent=v.start+'–'+v.slutt}
+ else{$('vCode').textContent=ukjent?'?':'Fri';$('vStart').textContent=ukjent?'Turnus ikke lagt inn':'Ingen vakt';$('vTid').textContent=ukjent?'Legg inn under Innstillinger → Turnus':'Fri eller ikke på jobb denne dagen'}
 }
 // Tell the viewer when someone else places or changes a bet while the page is open.
 let seen=new Set(),toastT;
@@ -486,6 +510,7 @@ function render(){
  const yn=bets.filter(b=>b.type==='yn'),mn=bets.filter(b=>b.type==='min');
  const myYn=yn.find(b=>b.profile===me),myMin=mn.find(b=>b.profile===me);
  const past=d&&today&&d<today;
+ vakt(d);
  $('status').replaceChildren();
  if(res){$('status').append('Avgjort: ',el('b',null,resTxt(res)),res.source==='logg'?' (fra loggen).':'.')}
  else if(past)$('status').textContent='Ikke avgjort ennå. Nye bets er stengt for dager som har vært.';
