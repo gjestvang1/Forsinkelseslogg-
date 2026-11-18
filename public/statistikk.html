@@ -237,7 +237,7 @@ async function load(){
   dataV=j.v||'';
   rawE=(j.entries&&j.entries.entries)||[];
   if(j.lunsj)rawL=j.lunsj.entries||[];
-  if(j.vakter)window.VAKTPLAN=j.vakter.plan||{};
+  if(j.vakter){window.VAKTPLAN=j.vakter.plan||{};if(window.gipsInnst)gipsInnst(j.vakter)}
   if(j.betting)betData=j.betting;
   loaded=true;document.documentElement.classList.remove('laster');
   $('stat').textContent='Oppdateres automatisk.';

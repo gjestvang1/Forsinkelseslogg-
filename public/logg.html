@@ -272,7 +272,7 @@ async function load(){
   dataV=j.v||'';
   rawE=(j.entries&&j.entries.entries)||[];
   if(j.lunsj)rawL=j.lunsj.entries||[];
-  if(j.vakter){window.VAKTPLAN=j.vakter.plan||{};gipsdag(j.vakter.gipsdag)}
+  if(j.vakter){window.VAKTPLAN=j.vakter.plan||{};if(window.gipsInnst)gipsInnst(j.vakter)}
   if(j.betting)betData=j.betting;
   loaded=true;document.documentElement.classList.remove('laster');
   $('stat').textContent='Delt liste: oppdateres automatisk for alle med lenken.';
@@ -407,8 +407,6 @@ function turnVarsel(){
 }
 $('turnOpen').onclick=()=>$('gear').click();
 $('turnX').onclick=()=>{try{localStorage.setItem('forsinkelseslogg:turnusvarsel',sisteVakt())}catch(e){}$('turnVarsel').hidden=true};
-// K6: the plaster theme on the yearly «gipsdag» chosen in Innstillinger.
-function gipsdag(md){const n=new Date();if(md&&md===pad(n.getMonth()+1)+'-'+pad(n.getDate())&&window.settTema)settTema('gips')}
 $('vNow').onclick=()=>{if(nowMin){const m=nowMin;nowMin=0;spin(m);vakt()}};
 setInterval(()=>{if(!document.hidden)vakt()},20000);
 $('date').addEventListener('change',vakt);

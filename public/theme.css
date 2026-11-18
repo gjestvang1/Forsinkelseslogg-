@@ -256,26 +256,49 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
 .stab>.me{font-weight:700}
 #gipsBox .row{grid-template-columns:minmax(0,1fr) auto}
 
-/* K6: plaster theme («gips») — white cast, marker writing, stockinette band at the top */
-:root.gips{--bg:#ECE9E2;--surface:#F7F5F0;--ink:#26292E;--mute:#6B675E;--line:#CFC8B9;--accent:#1E4FC2;--good:#1F8A5B;--bad:#C0392B;--felt-hi:#F6F4EE;--felt-lo:#E4DFD3;--lunch:#2E8FB8;color-scheme:light}
-.gips body::before{background:
- url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cg fill='none' stroke='%23B9B1A0' stroke-width='1.1' opacity='.55'%3E%3Cpath d='M10 40l22 9 9-6 18 14 7 19'/%3E%3Cpath d='M170 20l-12 18 6 12-14 20'/%3E%3Cpath d='M200 180l20 6 6 16 18 4'/%3E%3Cpath d='M60 200l-8 18 12 10-4 22'/%3E%3C/g%3E%3C/svg%3E"),
- linear-gradient(180deg,var(--felt-hi) 0,var(--felt-lo) 85%)}
-.gips h1,.gips .big,.gips .rec b,.gips .player b{font-family:'Permanent Marker','Marker Felt','Comic Sans MS',cursive}
-.gips h1{color:var(--accent);transform:rotate(-2deg);letter-spacing:0}
-.gips h1::before{content:"✍️ ✦ 🩹 ✦ ✍️";letter-spacing:.4em}
-.gips.fx h1{animation:none;background:none;-webkit-text-fill-color:currentColor;color:var(--accent)}
-.gips .hero{background:repeating-linear-gradient(90deg,rgba(0,0,0,.03) 0 3px,transparent 3px 7px),var(--surface);border:2px solid var(--line);box-shadow:inset 0 10px 0 -2px #DCD6C8}
-.gips .hero small.neon{color:var(--accent);text-shadow:none}
-.gips .hero small::after{content:"  🩹"}
-.gips .big{color:var(--ink)}
-.gips .add,.gips .card,.gips .rec div,.gips details.fold,.gips .push,.gips .player{background:var(--surface);box-shadow:0 1px 0 rgba(0,0,0,.06)}
-.gips .lead{background:var(--ink);color:#F7F5F0}.gips .lead b,.gips .lead small,.gips .lead .arr{color:#F7F5F0}
-.gips .vakt,.gips .tabs,.gips .quickd button,.gips .ptype{background:rgba(0,0,0,.04)}
-.gips .stamp{color:var(--accent);border-color:var(--accent)}
-.gips .chip{border-color:var(--accent)}
 /* Logg → Statistikk shortcut */
 .tostat{display:block;width:100%;margin:22px 0 0;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.16);color:var(--ink);font-weight:600;text-align:left;font-size:1rem}
+
+/* K6: hospital/plaster theme («gips») — mint scrubs, pills, syringes, heartbeat, marker writing on a white cast */
+:root.gips{--bg:#D5EFEB;--surface:#FFFFFF;--ink:#12343B;--mute:#52767C;--line:#AFDAD3;--accent:#0B7A8A;--good:#1E9E62;--bad:#D7263D;--felt-hi:#EAF8F5;--felt-lo:#B6E2DB;--lunch:#F2A93B;color-scheme:light}
+.gips body::before{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg opacity='.33'%3E%3Cg transform='translate%2828 30%29 rotate%28-30%29 scale%281%29'%3E%3Cpath d='M-7 -6h7v12h-7a6 6 0 0 1 0-12z' fill='%23E8566C'/%3E%3Cpath d='M0 -6h7a6 6 0 0 1 0 12H0z' fill='%23fff' stroke='%23E8566C' stroke-width='1'/%3E%3C/g%3E%3Cg transform='translate%28120 22%29'%3E%3Ccircle r='7' fill='%23F3C24B'/%3E%3Cpath d='M-5 0h10' stroke='rgba%280%2C0%2C0%2C.18%29' stroke-width='1.2'/%3E%3C/g%3E%3Cpath d='M78 72h4v4h4v4h-4v4h-4v-4h-4v-4h4z' fill='%230B7A8A'/%3E%3Cg transform='translate%28150 96%29 rotate%2840%29 scale%281%29'%3E%3Cpath d='M-7 -6h7v12h-7a6 6 0 0 1 0-12z' fill='%233A8DDE'/%3E%3Cpath d='M0 -6h7a6 6 0 0 1 0 12H0z' fill='%23fff' stroke='%233A8DDE' stroke-width='1'/%3E%3C/g%3E%3Cg transform='translate%2838 128%29'%3E%3Ccircle r='8' fill='%23fff'/%3E%3Cpath d='M-6 0h12' stroke='rgba%280%2C0%2C0%2C.18%29' stroke-width='1.2'/%3E%3C/g%3E%3Cg transform='translate%28104 150%29 rotate%28-60%29 scale%281%29'%3E%3Cpath d='M-7 -6h7v12h-7a6 6 0 0 1 0-12z' fill='%237BC67E'/%3E%3Cpath d='M0 -6h7a6 6 0 0 1 0 12H0z' fill='%23fff' stroke='%237BC67E' stroke-width='1'/%3E%3C/g%3E%3Cpath d='M163 159h4v4h4v4h-4v4h-4v-4h-4v-4h4z' fill='%23E8566C'/%3E%3Cg transform='translate%2870 10%29'%3E%3Ccircle r='5' fill='%23C9A2F0'/%3E%3Cpath d='M-3 0h6' stroke='rgba%280%2C0%2C0%2C.18%29' stroke-width='1.2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") 0 0/180px 180px,radial-gradient(ellipse at 50% 0,rgba(255,255,255,.7),transparent 60%),linear-gradient(180deg,var(--felt-hi) 0,var(--felt-lo) 90%)}
+.gips h1,.gips .big,.gips .rec b,.gips .player b{font-family:'Permanent Marker','Marker Felt','Comic Sans MS',cursive}
+.gips h1{color:var(--accent);transform:rotate(-2deg);letter-spacing:0;text-shadow:2px 2px 0 rgba(255,255,255,.8)}
+.gips h1::before{content:"💊 💉 🩺 💉 💊";letter-spacing:.4em}
+.gips h1::after{content:"";display:block;height:18px;margin:6px auto 0;max-width:260px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='30'%3E%3Cpath d='M0 18h40l5-6 5 6h6l4 8 6-24 6 20 4-4h44' fill='none' stroke='%23E8566C' stroke-width='1.8' stroke-linejoin='round' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E") 0 50%/80px 20px repeat-x;transform:rotate(2deg)}
+.gips.fx h1{animation:none;background:none;-webkit-text-fill-color:currentColor;color:var(--accent)}
+.gips .hero{position:relative;overflow:hidden;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='30'%3E%3Cpath d='M0 18h40l5-6 5 6h6l4 8 6-24 6 20 4-4h44' fill='none' stroke='%23E8566C' stroke-width='1.8' stroke-linejoin='round' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E") 0 calc(100% - 6px)/120px 30px repeat-x,url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M0 0L8 8M8 0L0 8' stroke='rgba%2811%2C80%2C90%2C.05%29' stroke-width='1'/%3E%3C/svg%3E"),var(--surface);border:2px solid var(--line);box-shadow:0 6px 18px rgba(11,122,138,.16),inset 0 10px 0 -2px #E4F4F1;padding-bottom:30px}
+.gips .hero::after{content:"+";position:absolute;top:10px;right:12px;width:24px;height:24px;border-radius:50%;background:var(--bad);color:#fff;font:800 20px/24px Inter,system-ui,sans-serif;text-align:center;box-shadow:0 2px 6px rgba(215,38,61,.35)}
+.gips .hero small.neon{color:var(--accent);text-shadow:none}
+.gips .hero small::after{content:"  💊"}
+.gips .big{color:var(--ink)}
+.gips .add,.gips .card,.gips .rec div,.gips details.fold,.gips .push,.gips .player{background:var(--surface);box-shadow:0 2px 10px rgba(11,122,138,.10)}
+.gips .lead{background:linear-gradient(135deg,#0A6674,#13A0AE);color:#fff;box-shadow:0 6px 16px rgba(11,122,138,.3)}.gips .lead b,.gips .lead small,.gips .lead .arr{color:#fff}
+.gips .lead .cup{font-size:0}.gips .lead .cup::before{content:"🩺";font-size:1.6rem}
+.gips .vakt,.gips .tabs,.gips .quickd button,.gips .ptype{background:rgba(11,122,138,.07)}
+.gips .stamp{color:var(--accent);border-color:var(--accent)}
+.gips .chip{border-color:var(--accent)}
 .gips .tostat{background:var(--surface)}
 .gips .nowbtn,.gips .chips .chip.naa,.gips .tabs button[aria-selected=true],.gips .quickd button[aria-pressed=true]{color:#fff}
+.gips .nowbtn:not(.tide){background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg transform='rotate%28-45 20 20%29'%3E%3Crect x='2' y='17.5' width='4' height='5' rx='1' fill='%23fff'/%3E%3Crect x='6' y='19' width='6' height='2' fill='%23fff'/%3E%3Crect x='12' y='14' width='18' height='12' rx='2' fill='rgba%28255%2C255%2C255%2C.25%29' stroke='%23fff' stroke-width='2'/%3E%3Crect x='19' y='16' width='10' height='8' fill='%23BFF3EE'/%3E%3Cpath d='M16 14v4M20 14v4M24 14v4' stroke='%23fff' stroke-width='1.3'/%3E%3Cpath d='M30 20h9' stroke='%23fff' stroke-width='1.6' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E") 14px 50%/30px 30px no-repeat,linear-gradient(135deg,#0A6674,#13A0AE);padding-left:48px;padding-right:14px;box-shadow:0 6px 16px rgba(11,122,138,.35)}
 .gips input,.gips select{background:#fff}
+/* The quick chips become capsules: coloured half and white half. */
+.gips .chips .chip:not(.naa){--c:#FFB3BF;border:1.5px solid rgba(18,52,59,.18);background:linear-gradient(180deg,rgba(255,255,255,.55),transparent 45%),linear-gradient(90deg,var(--c) 0 50%,#fff 50%);box-shadow:0 2px 5px rgba(11,122,138,.18)}
+.gips .chips .chip:nth-child(5n+2){--c:#A8D8FF}.gips .chips .chip:nth-child(5n+3){--c:#FFE08A}.gips .chips .chip:nth-child(5n+4){--c:#B7EBC6}.gips .chips .chip:nth-child(5n){--c:#D9C2FF}
+.gips .chips .chip.naa{background:var(--bad);border-color:var(--bad)}
+/* The suit cards become a blister pack. */
+.gips .suits{width:max-content;margin:6px auto 4px;padding:8px 14px;border-radius:14px;background:linear-gradient(135deg,#F4F7F8,#C9D3D6 45%,#EEF2F3 55%,#B9C4C8);box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.gips .suits button{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 20%,#EAF6F4 45%,#C4DCD9);box-shadow:inset 0 -2px 4px rgba(0,0,0,.15),0 1px 2px rgba(0,0,0,.25)}
+.gips .fxchip{width:26px;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--c,#E8566C) 0 50%,#fff 50%);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+@media (prefers-reduced-motion:no-preference){
+ .gips .hero{animation:gEcg 2.4s linear infinite}
+ .gips h1::after{animation:gEcgH 1.6s linear infinite}
+ .gips .lead .cup::before{display:inline-block;animation:gBeat 1.2s ease-in-out infinite}
+ .gips .nowbtn:not(.tide){animation:gPush 2.6s ease-in-out infinite}
+}
+@keyframes gEcg{to{background-position:-120px calc(100% - 6px),0 0,0 0}}
+@keyframes gEcgH{to{background-position:-80px 50%}}
+@keyframes gBeat{0%,40%,100%{transform:scale(1)}15%{transform:scale(1.18)}28%{transform:scale(1.06)}}
+@keyframes gPush{0%,70%,100%{background-position:14px 50%,0 0}80%{background-position:20px 50%,0 0}}
+.gips .quickd button[aria-pressed=true]{background:var(--accent);border-color:var(--accent)}
+.gips .player b{color:var(--accent)}

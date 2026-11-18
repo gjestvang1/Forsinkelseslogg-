@@ -32,7 +32,9 @@ export default async (req) => {
     const shown = bets.map((b) => (res[b.date] || b.type !== "min" ? b : { ...b, guess: null }));
     const profiles = PROFILES.map((id) => ({ id, name: names[id], balance: balances[id] }));
     const vapidKey = (await vapid(s)).publicKey;
-    return json({ v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN, loans, loan: { amount: LOAN, repay: REPAY, below: LOAN_BELOW } });
+    // The plaster theme is shared: Betting picks up the switch from here, like Logg does from /api/alt.
+    const ti = (await openStore("vakter").get("innst", { type: "json" }).catch(() => null)) || {};
+    return json({ tema: { gips: !!ti.gips, gipsdag: ti.gipsdag || "" }, v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN, loans, loan: { amount: LOAN, repay: REPAY, below: LOAN_BELOW } });
   }
 
   // Turning notifications on or off only touches this device, so it needs no write code.

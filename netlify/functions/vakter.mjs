@@ -24,9 +24,11 @@ export default async (req) => {
   const s = store();
   const plan = (await s.get("plan", { type: "json" })) || {};
 
-  // K6: the yearly «gipsdag» (MM-DD) when the plaster theme switches on by itself.
+  // K6: the yearly «gipsdag» (MM-DD) when the plaster theme switches on by itself,
+  // and «gips» (true/false): the theme switched on by hand for everyone.
   const innst = async () => (await s.get("innst", { type: "json" })) || {};
-  if (req.method === "GET") return json({ plan, gipsdag: (await innst()).gipsdag || "" });
+  const tema = (i) => ({ gipsdag: i.gipsdag || "", gips: !!i.gips });
+  if (req.method === "GET") return json({ plan, ...tema(await innst()) });
 
   if (!authorized(req)) return json({ error: "Feil skrivekode" }, 401);
 
@@ -34,10 +36,13 @@ export default async (req) => {
   if (req.method === "PUT") {
     let b;
     try { b = await req.json(); } catch { return json({ error: "Ugyldig data" }, 400); }
-    if (b && typeof b.gipsdag === "string" && !b.days) {
+    if (b && (typeof b.gipsdag === "string" || typeof b.gips === "boolean") && !b.days) {
       if (b.gipsdag && !/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(b.gipsdag)) return json({ error: "Ugyldig dato" }, 400);
-      await s.setJSON("innst", { ...(await innst()), gipsdag: b.gipsdag });
-      return json({ plan, gipsdag: b.gipsdag });
+      const ny = { ...(await innst()) };
+      if (typeof b.gipsdag === "string") ny.gipsdag = b.gipsdag;
+      if (typeof b.gips === "boolean") ny.gips = b.gips;
+      await s.setJSON("innst", ny);
+      return json({ plan, ...tema(ny) });
     }
     const days = b && typeof b.days === "object" ? b.days : null;
     if (!days || Object.keys(days).length > 62) return json({ error: "Ugyldig data" }, 400);
@@ -52,7 +57,7 @@ export default async (req) => {
     const before = voided.length ? await betState().catch(() => null) : null;
     await s.setJSON("plan", plan);
     if (before) for (const d of voided) if (!before.res[d] && before.bets.some((x) => x.date === d)) await notifyResult(betStore(), d).catch(() => {});
-    return json({ plan, gipsdag: (await innst()).gipsdag || "" });
+    return json({ plan, ...tema(await innst()) });
   }
 
   return json({ error: "Ikke støttet" }, 405);

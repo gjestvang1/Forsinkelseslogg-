@@ -107,6 +107,7 @@
       const c = document.createElement("i");
       c.className = jul ? "fxgift" : "fxchip";
       if (jul) c.textContent = ["🎁", "❄️", "⭐", "🎄"][i % 4];
+      else if (root.classList.contains("gips")) c.style.setProperty("--c", ["#E8566C", "#3A8DDE", "#F3C24B", "#7BC67E", "#B38AE8"][i % 5]); // K6: pills fly instead of chips
       c.style.left = r.left + r.width / 2 - 11 + "px";
       c.style.top = r.top + r.height / 2 - 11 + "px";
       document.body.appendChild(c);

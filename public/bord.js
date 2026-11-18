@@ -27,8 +27,8 @@
 .bord .stack.slide{animation:bordSlide .7s cubic-bezier(.2,.8,.3,1) both}
 @keyframes bordSlide{from{transform:translate(var(--dx),var(--dy)) scale(.7);opacity:.2}}
 .bord .empty{position:absolute;left:50%;top:56%;transform:translateX(-50%);font-size:.78rem;color:#F6EBD0;opacity:.7;white-space:nowrap}
-.gips .bord .felt{background:radial-gradient(ellipse at 50% 40%,#FFFFFF,#E9E5DC 70%);border-color:#B9B2A3;box-shadow:0 0 0 2px #8E8778,inset 0 0 18px rgba(0,0,0,.12),0 10px 24px rgba(0,0,0,.18)}
-.gips .bord .pot{color:#2B2B2B}.gips .bord .pot b{color:#1E4FC2;text-shadow:none}.gips .bord .empty{color:#2B2B2B}
+.gips .bord .felt{background:radial-gradient(ellipse at 50% 40%,#3FB8AE,#167C77 72%);border-color:#C9D3D6;box-shadow:0 0 0 3px #8FA3A8,inset 0 0 22px rgba(0,0,0,.25),0 10px 24px rgba(11,80,90,.3)}
+.gips .bord .pot{color:#fff}.gips .bord .pot b{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4)}.gips .bord .empty{color:#E9FBF8}
 `;
   const mk = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
   const seen = new Map(); // bet id → ts already shown

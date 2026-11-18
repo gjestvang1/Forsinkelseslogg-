@@ -24,14 +24,24 @@
     else if (md >= 620 && md <= 810) t = "sommer";
     else if (md >= 1024 && md <= 1031) t = "halloween";
   }
-  // K6: «gips» (plaster) is only forced (?tema=gips) or switched on by the yearly gipsdag (settTema).
-  window.settTema = (name) => {
+  // K6: «gips» (plaster) is forced (?tema=gips), switched on for everyone in Innstillinger (server
+  // setting «gips»), or on the yearly gipsdag. settTema(name, on) flips it live on the shell and all pages;
+  // the season theme of the day comes back when it is switched off.
+  window.settTema = (name, on = true) => {
     const wins = [window];
     try { const top = window.parent; if (top !== window) { wins.push(top); ["f0", "f1", "f2"].forEach((id) => { const f = top.document.getElementById(id); if (f && f.contentWindow !== window) wins.push(f.contentWindow); }); } } catch (e) {}
     wins.forEach((w) => {
       try {
+        const cl = w.document.documentElement.classList;
+        if (!on) {
+          if (w.TEMA !== name) return;
+          cl.remove(name); w.TEMA = w.SESONG || "";
+          if (w.SESONG) cl.add(w.SESONG); else cl.remove("tema");
+          return;
+        }
         if (w.TEMA === name) return;
-        w.TEMA = name; w.document.documentElement.classList.add("tema", name);
+        if (w.SESONG) cl.remove(w.SESONG);
+        w.TEMA = name; cl.add("tema", name);
         if (name === "gips" && !w.document.getElementById("gips-font")) {
           const l = w.document.createElement("link"); l.id = "gips-font"; l.rel = "stylesheet";
           l.href = "https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap"; w.document.head.appendChild(l);
@@ -39,8 +49,21 @@
       } catch (e) {}
     });
   };
-  if (t === "gips") return window.settTema("gips");
-  if (!["paske", "mai17", "sommer", "halloween"].includes(t)) return;
+  // Called by each page with the server's { gips, gipsdag } (from /api/alt or /api/betting).
+  // The last answer is remembered on the device so the app opens in the right theme.
+  const KEY = "forsinkelseslogg:gips";
+  window.gipsInnst = (o) => {
+    if (!o || forced) return;
+    const n = new Date(), p = (x) => String(x).padStart(2, "0");
+    const on = !!o.gips || (!!o.gipsdag && o.gipsdag === p(n.getMonth() + 1) + "-" + p(n.getDate()));
+    try { localStorage.setItem(KEY, on ? "1" : ""); } catch (e) {}
+    window.settTema("gips", on);
+  };
+  let cached = false;
+  try { cached = localStorage.getItem(KEY) === "1"; } catch (e) {}
+  if (["paske", "mai17", "sommer", "halloween"].includes(t)) window.SESONG = t;
+  if (t === "gips" || (!forced && cached)) return window.settTema("gips");
+  if (!window.SESONG) return;
   window.TEMA = t;
   document.documentElement.classList.add("tema", t);
 })();

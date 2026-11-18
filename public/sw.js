@@ -3,7 +3,7 @@
 // request still goes to the network first, so a new deploy is picked up straight away; only when
 // the network fails or takes longer than a few seconds does the saved copy answer instead.
 const CACHE = "forsinkelseslogg-v1";
-const SHELL = ["/", "/logg.html", "/betting.html", "/statistikk.html", "/theme.css", "/tema.js", "/vakter.js", "/poll.js", "/reg.js", "/swipe.js", "/fx.js", "/fun.js", "/runde2.js", "/mirakel.js", "/maaned.js", "/nyttaar.js", "/bord.js", "/vinner.js", "/manifest.webmanifest", "/icon-192.png", "/apple-touch-icon.png"];
+const SHELL = ["/", "/logg.html", "/betting.html", "/statistikk.html", "/theme.css", "/tema.js", "/gips.js", "/vakter.js", "/poll.js", "/reg.js", "/swipe.js", "/fx.js", "/fun.js", "/runde2.js", "/mirakel.js", "/maaned.js", "/nyttaar.js", "/bord.js", "/vinner.js", "/manifest.webmanifest", "/icon-192.png", "/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(SHELL.map((u) => c.add(new Request(u, { cache: "reload" }))))).then(() => self.skipWaiting()));

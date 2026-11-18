@@ -239,8 +239,10 @@ main{position:relative}
    <button class="go" type="button" id="tSave" disabled>Lagre turnus</button>
    <p id="tMsg" role="status"></p>
   </div>
-  <div class="push" id="gipsBox"><div class="turnHead"><b>Gipsdag</b></div>
-   <p>Én dag i året blir hele appen gips. Velg dagen, eller la feltet stå tomt for å slå det av. Prøv det nå med ?tema=gips.</p>
+  <div class="push" id="gipsBox"><div class="turnHead"><b>Gipstema</b></div>
+   <p>Slår gipstemaet av eller på for alle som bruker appen.</p>
+   <button class="ptype" type="button" id="gipsPaa" aria-pressed="false">💊 Gipstema nå</button>
+   <p>Eller la det skru seg på av seg selv én dag i året. La feltet stå tomt for ingen gipsdag.</p>
    <div class="row"><input type="date" id="gipsDato" aria-label="Gipsdag"><button class="go" type="button" id="gipsSave">Lagre</button></div>
    <p id="gipsMsg" role="status"></p>
   </div>
@@ -301,6 +303,7 @@ async function load(){
   const j=await r.json();
   if(j.same){$('stat').textContent='Delt mellom alle med lenken, oppdateres automatisk.';return} // nothing new
   data=j;
+  if(j.tema&&window.gipsInnst)gipsInnst(j.tema);
   if(prev)announce(data.bets.filter(b=>b.profile!==me&&prev[b.id]!==b.ts));
   if(!today){today=data.today;$('date').min=today;$('date').value=today}
   today=data.today;
@@ -486,16 +489,25 @@ $('tSave').onclick=async()=>{
  turnus();
 };
 function openSettings(){$('sheet').hidden=false;lastVakter().then(turnus);gipsLoad()}
-// K6: the yearly «gipsdag» (stored as MM-DD, shown as a date this year).
-async function gipsLoad(){try{const j=await (await fetch('/api/vakter',{cache:'no-store'})).json();$('gipsDato').value=j.gipsdag?new Date().getFullYear()+'-'+j.gipsdag:''}catch(e){}}
+// K6: the plaster theme, shared by everyone: an on/off switch and the yearly «gipsdag» (MM-DD).
+async function gipsLoad(){try{const j=await (await fetch('/api/vakter',{cache:'no-store'})).json();$('gipsDato').value=j.gipsdag?new Date().getFullYear()+'-'+j.gipsdag:'';$('gipsPaa').setAttribute('aria-pressed',!!j.gips)}catch(e){}}
+async function gipsPut(body){
+ const send=()=>fetch('/api/vakter',{method:'PUT',headers:Object.assign({'content-type':'application/json'},code?{'x-skrivekode':code}:{}),body:JSON.stringify(body)});
+ let r=await send();
+ while(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(!c)throw new Error('Trenger skrivekode.');code=c.trim();ls.set(CKEY,code);r=await send()}
+ if(!r.ok)throw new Error('Kunne ikke lagre.');
+ const j=await r.json();if(window.gipsInnst)gipsInnst(j);return j;
+}
+$('gipsPaa').onclick=async()=>{
+ const b=$('gipsPaa'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);$('gipsMsg').textContent='Lagrer …';
+ try{await gipsPut({gips:on});$('gipsMsg').textContent=on?'Gipstemaet er på for alle.':'Gipstemaet er av for alle.'}
+ catch(e){b.setAttribute('aria-pressed',!on);$('gipsMsg').textContent=e.message||'Kunne ikke lagre.'}
+};
 $('gipsSave').onclick=async()=>{
  const v=$('gipsDato').value,md=v?v.slice(5):'';$('gipsMsg').textContent='Lagrer …';
  try{
-  const send=()=>fetch('/api/vakter',{method:'PUT',headers:Object.assign({'content-type':'application/json'},code?{'x-skrivekode':code}:{}),body:JSON.stringify({gipsdag:md})});
-  let r=await send();
-  while(r.status===401){const c=prompt(code?'Feil skrivekode. Prøv igjen:':'Skriv inn skrivekoden:');if(!c)throw new Error('Trenger skrivekode.');code=c.trim();ls.set(CKEY,code);r=await send()}
-  if(!r.ok)throw new Error('Kunne ikke lagre.');
-  $('gipsMsg').textContent=md?'Lagret. Gipsdag hvert år '+new Date(2000,+md.slice(0,2)-1,+md.slice(3)).toLocaleDateString('nb-NO',{day:'numeric',month:'long'})+'.':'Gipsdag er slått av.';
+  await gipsPut({gipsdag:md});
+  $('gipsMsg').textContent=md?'Lagret. Gipsdag hvert år '+new Date(2000,+md.slice(0,2)-1,+md.slice(3)).toLocaleDateString('nb-NO',{day:'numeric',month:'long'})+'.':'Ingen gipsdag.';
  }catch(e){$('gipsMsg').textContent=e.message||'Kunne ikke lagre.'}
 };
 const closeSettings=()=>{$('sheet').hidden=true};
