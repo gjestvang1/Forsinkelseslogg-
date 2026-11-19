@@ -389,6 +389,7 @@ async function settVakt(c){
   const j=await r.json().catch(()=>({}));
   if(!r.ok){$('vEditErr').textContent=j.error||'Kunne ikke lagre. Prøv igjen.';return}
   window.VAKTPLAN=j.plan||{};$('vEditErr').textContent='';$('vEditBox').hidden=true;
+  if(val==='SYK'&&window.kasinoMsg)kasinoMsg('syk');
   try{const w=parent.document.getElementById('f1').contentWindow;if(w&&w!==window){w.VAKTPLAN=window.VAKTPLAN;w.load&&w.load()}}catch(e){}
   await load();
  }catch(e){$('vEditErr').textContent='Får ikke kontakt med serveren. Prøv igjen.'}
