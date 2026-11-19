@@ -45,6 +45,22 @@
     (m) => m >= 2 && "= " + Math.round(m / 2) + " pasienter som rakk å spørre «er det lenge igjen?»",
     (m) => m >= 60 && "= en hel ventetid på legevakta. Nesten.",
     (m) => m >= 20 && "= " + unit(m / 10, "gips", "gipser") + " som rakk å stivne",
+    // Picked from the conversions artifact, 2026-11-19.
+    (m) => m >= 4 && "= " + Math.round(m / 2) + " fingerskinner tapet",
+    (m) => m >= 8 && "= " + Math.round(m / 4) + " runder med gipssaga, med hørselvern",
+    (m) => m >= 12 && "= " + Math.round(m / 6) + " sterile felt dekket til CTS",
+    (m) => m >= 12 && "= " + Math.round(m / 6) + " henvisninger skrevet (med skrivefeil)",
+    (m) => m >= 6 && "= " + Math.round(m / 3) + " runder med «hvem har tatt saksa mi?»",
+    (m) => m >= 8 && "= " + Math.round(m / 4) + " turer til lageret etter feil størrelse",
+    (m) => m >= 20 && "= " + Math.round(m / 10) + " journalnotater som aldri blir skrevet ferdig",
+    (m) => m >= 30 && "= " + Math.round(m / 15) + " HLR-øvelser med dukke",
+    (m) => m >= 6 && "= " + Math.round(m / 3) + " vafler stekt",
+    (m) => m >= 30 && "= " + Math.round(m / 15) + " Grandiosaer i ovnen",
+    (m) => m >= 20 && "= " + Math.round(m / 10) + " isbiter som rakk å smelte",
+    (m) => m >= 50 && "= en hel flytur Oslo–Bergen",
+    (m) => m >= 90 && "= " + Math.round(m / 45) + " episoder av Farmen",
+    (m) => m >= 100 && "= en hel spillefilm, med rulletekst",
+    (m) => m >= 120 && "= en kjøretur fra Oslo til Lillehammer. Nesten.",
   ];
   const ZERO = ["0 min = 0 gipsede hender. Mistenkelig.", "0 min. Kaffen er fortsatt varm.", "0 min = tid til ingenting. Imponerende."];
 
