@@ -8,9 +8,13 @@ import { getStore } from "@netlify/blobs";
 const REV = "_rev";
 const newRev = () => Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
 
+// One shared revision for all stores ("meta" store, key "rev"), bumped after every store's own
+// revision. The pages' «anything new?» check reads only this one blob instead of one per store.
+const meta = () => getStore({ name: "meta", consistency: "strong" });
+
 export function openStore(name) {
   const s = getStore({ name, consistency: "strong" });
-  const bump = () => s.setJSON(REV, { rev: newRev() });
+  const bump = async () => { await s.setJSON(REV, { rev: newRev() }); await meta().setJSON("rev", { rev: newRev() }); };
   return new Proxy(s, {
     get(t, k) {
       if (k === "setJSON" || k === "set" || k === "delete")
@@ -28,6 +32,27 @@ export async function revOf(s) {
   const rev = newRev();
   await s.setJSON(REV, { rev });
   return rev;
+}
+
+// The shared revision of all stores together (one read). Created on first use.
+export async function allRev() {
+  const m = meta(), r = await m.get("rev", { type: "json" });
+  if (r && r.rev) return r.rev;
+  const rev = newRev();
+  await m.setJSON("rev", { rev });
+  return rev;
+}
+
+// A full GET answer is built once per version and kept, so the other phones polling the same
+// version get it with one read instead of rebuilding it from every store. `v` already includes
+// the shared revision, so a stored answer for an older version is never served.
+export async function cachedBody(name, v, build) {
+  const m = meta(), key = "svar/" + name;
+  const hit = await m.get(key, { type: "json" }).catch(() => null);
+  if (hit && hit.v === v && typeof hit.body === "string") return hit.body;
+  const { body, keep } = await build();
+  if (keep) await m.setJSON(key, { v, body }).catch(() => {});
+  return body;
 }
 
 // All items (optionally under a prefix): two reads when nothing has changed since the last list.

@@ -3,14 +3,25 @@
 // request still goes to the network first, so a new deploy is picked up straight away; only when
 // the network fails or takes longer than a few seconds does the saved copy answer instead.
 const CACHE = "forsinkelseslogg-v1";
+// At deploy, scripts/versjon.mjs swaps the .js/.css names below for their hashed /a/ copies.
 const SHELL = ["/", "/logg.html", "/betting.html", "/statistikk.html", "/theme.css", "/tema.js", "/gips.js", "/vakter.js", "/poll.js", "/reg.js", "/swipe.js", "/fx.js", "/fun.js", "/runde2.js", "/mirakel.js", "/maaned.js", "/nyttaar.js", "/bord.js", "/vinner.js", "/manifest.webmanifest", "/icon-192.png", "/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(SHELL.map((u) => c.add(new Request(u, { cache: "reload" }))))).then(() => self.skipWaiting()));
+  // Hashed copies already saved from an earlier version are not downloaded again.
+  e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(SHELL.map(async (u) => {
+    if (u.startsWith("/a/") && (await c.match(new URL(u, self.location.origin).href))) return;
+    return c.add(new Request(u, { cache: u.startsWith("/a/") ? "default" : "reload" }));
+  }))).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith("forsinkelseslogg-") && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith("forsinkelseslogg-") && k !== CACHE).map((k) => caches.delete(k))))
+    .then(pruneOld).then(() => self.clients.claim()));
 });
+// Hashed copies (/a/…, made at deploy) from earlier versions are no longer used: drop them.
+async function pruneOld() {
+  const c = await caches.open(CACHE), keep = new Set(SHELL.map((u) => new URL(u, self.location.origin).href));
+  for (const r of await c.keys()) if (new URL(r.url).pathname.startsWith("/a/") && !keep.has(r.url)) await c.delete(r);
+}
 
 const API_READ = /^\/api\/(alt|betting|entries|lunsj|vakter)$/;
 const withTimeout = (p, ms) => new Promise((ok, no) => { const t = setTimeout(() => no(new Error("timeout")), ms); p.then((r) => { clearTimeout(t); ok(r); }, (e) => { clearTimeout(t); no(e); }); });
@@ -25,6 +36,11 @@ self.addEventListener("fetch", (e) => {
   const key = isApi ? url.origin + url.pathname : req.mode === "navigate" ? url.origin + url.pathname : req.url;
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
+    // Hashed copies (/a/…) never change: the saved one answers without asking the network.
+    if (url.pathname.startsWith("/a/")) {
+      const hit = await cache.match(req.url);
+      if (hit) return hit;
+    }
     const net = fetch(req).then(async (res) => {
       if (res.ok) {
         if (!isApi) await cache.put(key, res.clone());

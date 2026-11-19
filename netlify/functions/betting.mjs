@@ -1,4 +1,4 @@
-import { openStore, revOf } from "../lib/snap.mjs";
+import { openStore, allRev, cachedBody } from "../lib/snap.mjs";
 import { LOAN, REPAY, LOAN_BELOW, kinds, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, state, vapid, subKey, notifyBet, notifyResult } from "../lib/betting.mjs";
 
 // Betting on the delay log. Bets, profile names and manual results live in
@@ -25,16 +25,21 @@ export default async (req) => {
 
   if (req.method === "GET") {
     // Unchanged since the page's last load: a tiny "same" instead of everything.
-    const v = (await revOf(s)) + "." + (await revOf(openStore("forsinkelser"))) + "." + (await revOf(openStore("vakter"))) + "." + todayOslo();
+    // One read: the shared revision that every write bumps (see snap.mjs).
+    const v = (await allRev()) + "." + todayOslo();
     if (new URL(req.url).searchParams.get("v") === v) return json({ same: true, v });
-    const { bets, res, months, balances, resets, names, loans } = await state();
-    // Guesses stay hidden until the day is settled, so nobody can undercut by one minute.
-    const shown = bets.map((b) => (res[b.date] || b.type !== "min" ? b : { ...b, guess: null }));
-    const profiles = PROFILES.map((id) => ({ id, name: names[id], balance: balances[id] }));
-    const vapidKey = (await vapid(s)).publicKey;
-    // The plaster theme is shared: Betting picks up the switch from here, like Logg does from /api/alt.
-    const ti = (await openStore("vakter").get("innst", { type: "json" }).catch(() => null)) || {};
-    return json({ tema: { gips: !!ti.gips, gipsdag: ti.gipsdag || "" }, v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN, loans, loan: { amount: LOAN, repay: REPAY, below: LOAN_BELOW } });
+    // Built once per version; the other phones get the same answer with one more read.
+    const body = await cachedBody("betting", v, async () => {
+      const { bets, res, months, balances, resets, names, loans } = await state();
+      // Guesses stay hidden until the day is settled, so nobody can undercut by one minute.
+      const shown = bets.map((b) => (res[b.date] || b.type !== "min" ? b : { ...b, guess: null }));
+      const profiles = PROFILES.map((id) => ({ id, name: names[id], balance: balances[id] }));
+      const vapidKey = (await vapid(s)).publicKey;
+      // The plaster theme is shared: Betting picks up the switch from here, like Logg does from /api/alt.
+      const ti = (await openStore("vakter").get("innst", { type: "json" }).catch(() => null)) || {};
+      return { keep: true, body: JSON.stringify({ tema: { gips: !!ti.gips, gipsdag: ti.gipsdag || "" }, v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN, loans, loan: { amount: LOAN, repay: REPAY, below: LOAN_BELOW } }) };
+    });
+    return new Response(body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
   }
 
   // Turning notifications on or off only touches this device, so it needs no write code.

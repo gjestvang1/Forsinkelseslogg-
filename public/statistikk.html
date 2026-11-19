@@ -231,8 +231,7 @@ $('filt').querySelectorAll('button').forEach(b=>b.onclick=()=>{filt=b.dataset.f;
 let betData=null,loaded=false,dataV='';
 async function load(){
  try{
-  const r=await fetch('/api/alt?v='+encodeURIComponent(dataV),{cache:'no-store'});if(!r.ok)throw 0;
-  const j=await r.json();
+  const j=await altHent(dataV); // poll.js: shares the very first answer between Logg and Statistikk
   if(j.same){$('stat').textContent='Oppdateres automatisk.';return}
   dataV=j.v||'';
   rawE=(j.entries&&j.entries.entries)||[];
