@@ -1,11 +1,20 @@
 [build]
   publish = "public"
   functions = "netlify/functions"
-  # Skip publishing when a commit only changes documentation (no app files touched).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- public netlify netlify.toml package.json"
+  # Hashed copies of scripts and stylesheets under /a/ (see scripts/versjon.mjs).
+  command = "node scripts/versjon.mjs"
+  # Skip building when a commit only changes documentation (no app files touched), and never
+  # build pull request previews: only the real site is used.
+  ignore = "[ \"$CONTEXT\" = \"deploy-preview\" ] || git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- public netlify netlify.toml package.json scripts"
 
 # Icons and images rarely change: let phones keep them for a week instead of asking each time.
 [[headers]]
   for = "/*.png"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+
+# Hashed copies never change (a new version gets a new name): keep them for a year.
+[[headers]]
+  for = "/a/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
