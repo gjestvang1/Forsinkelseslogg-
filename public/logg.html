@@ -83,6 +83,7 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .chips .chip{min-height:44px;padding:8px 14px;font-size:1rem}
 .chips .chip.naa{border-style:solid;background:var(--accent);color:#0B2F25;font-weight:800}
 .chips .chip.naa[hidden]{display:none}
+.chips .chip[aria-pressed=true]{background:var(--accent);color:#0B2F25;border-color:var(--accent);font-weight:800}
 .outbox{margin:0;font-size:.85rem;color:var(--accent)}
 .mon{border-bottom:1px solid var(--line)}
 .mon>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:12px 0;font-weight:700}
@@ -184,16 +185,16 @@ main{position:relative}
   </div>
   <button type="button" class="vedit" id="vEdit">Syk, fri eller byttet vakt?</button>
   <div class="veditBox" id="vEditBox" hidden><p class="hint" id="vEditT"></p><div class="chips vpal" id="vPal"></div><p class="err" id="vEditErr" role="alert"></p></div>
-  <p class="hint" id="hint">Trykk på minuttene for å lagre for valgt dato.</p>
+  <p class="hint" id="hint">Trykk på minuttene, skriv gjerne et notat, og trykk Lagre.</p>
   <div class="chips" id="chips"></div>
   <div class="row">
    <label>Dato<input type="date" id="date"></label>
-   <label><span id="minLbl">Annet antall minutter</span><input type="number" id="min" min="1" max="600" inputmode="numeric" placeholder="f.eks. 12"></label>
+   <label><span id="minLbl">Minutter</span><input type="number" id="min" min="1" max="600" inputmode="numeric" placeholder="f.eks. 12"></label>
   </div>
   <label>Notat (valgfritt)<input type="text" id="note" maxlength="80" placeholder="f.eks. «Bussen gikk visst»"></label>
   <p class="dup" id="dup" role="status" hidden></p>
   <p class="err" id="err" role="alert"></p>
-  <button class="go" id="save">Legg til</button>
+  <button class="go" id="save">Lagre</button>
   <p class="outbox" id="outbox" role="status" hidden></p>
  </div>
 
@@ -223,8 +224,19 @@ const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 const sum=a=>a.reduce((s,e)=>s+e.min,0);
 let prevIds=null,prevAll=null;
 
-// One tap on a chip saves it right away (with Angre in the toast).
-[5,10,15,20,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.onclick=()=>quick(n);$('chips').appendChild(b)});
+// A tap on a chip only fills in the minutes; nothing is saved until «Lagre» is pressed,
+// so there is time to write a note first.
+[5,10,15,20,30].forEach(n=>{const b=el('button','chip',n+' min');b.type='button';b.dataset.m=n;b.onclick=()=>fill(n);$('chips').appendChild(b)});
+function fill(min){
+ $('min').value=min;$('err').textContent='';markChip();
+ $('note').scrollIntoView({block:'center',behavior:'smooth'});
+}
+function markChip(){
+ const v=parseInt($('min').value,10);
+ $('chips').querySelectorAll('.chip[data-m]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.m===v));
+ $('save').textContent=($('dup').hidden?'Lagre':'Lagre likevel')+(v>0?' · '+fmt(v):'');
+}
+$('min').addEventListener('input',markChip);
 // «Nå»: registers today's lateness right as she walks in, counted from today's shift start
 // (vakter.js / Innstillinger → Turnus). With no shift planned it guesses from the clock:
 // 12:00–13:00 → A1 (12:00), from 13:00 → A2 (13:00), otherwise 07:30.
@@ -244,8 +256,8 @@ function quick(min){
  if(v&&window.vaktMsg&&vaktMsg(v.kode))return;
  if(window.kasinoMsg)kasinoMsg(kind);
 }
-// D1: «Nå» spins a little roulette wheel first (runde2.js); straight save if it is missing.
-const spin=m=>window.rulett?rulett(m,()=>quick(m)):quick(m);
+// D1: «Nå» spins a little roulette wheel first (runde2.js), then fills in the minutes.
+const spin=m=>window.rulett?rulett(m,()=>fill(m)):fill(m);
 function setKind(k){
  kind=k;$('naa').hidden=k!=='sent';$('kind').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
  $('min').max=k==='lunsj'?300:600;$('note').placeholder=k==='lunsj'?'f.eks. «Lang kø i kantina»':'f.eks. «Bussen gikk visst»';
@@ -258,7 +270,7 @@ function add(){
  const date=$('date').value,min=parseInt($('min').value,10),max=kind==='lunsj'?300:600;
  if(!date){$('err').textContent='Velg en dato.';return}
  if(!(min>=1&&min<=max)){$('err').textContent='Skriv inn antall minutter (1–'+max+'), eller trykk på en av knappene.';return}
- $('err').textContent='';quick(min);$('min').value='';
+ $('err').textContent='';quick(min);$('min').value='';markChip();
 }
 reg.onSaved('sent',res=>{if(res&&res.firstOfYear&&window.nyttAar)nyttAar()});
 reg.on(t=>{if(t==='sent')load();else render()});
@@ -310,10 +322,10 @@ $('lead').onclick=()=>{try{if(parent.pager)return parent.pager.go(1)}catch(e){}l
 function checkDup(){
  const d=$('date').value,box=$('dup');
  const hit=d?(kind==='lunsj'?lunch:entries).filter(e=>e.date===d):[];
- if(!hit.length){box.hidden=true;$('save').textContent='Legg til';return}
+ if(!hit.length){box.hidden=true;markChip();return}
  const label=iso(new Date())===d?'i dag':parse(d).toLocaleDateString('nb-NO',{day:'numeric',month:'long'});
  box.textContent=(kind==='lunsj'?'Lunsj allerede registrert for ':'Allerede registrert for ')+label+': '+hit.map(e=>fmt(e.min)).join(', ')+'.';
- box.hidden=false;$('save').textContent='Legg til likevel';
+ box.hidden=false;markChip();
 }
 // Dagens vakt (public/vakter.js): viser oppmøtetid, og etter oppmøte en knapp som lagrer
 // minuttene fra vaktstart til nå. Ingenting vises på fridager og fraværsdager.
@@ -331,9 +343,9 @@ function vakt(){
   $('vLbl').textContent=d===iso(new Date())?'Dagens vakt':'Vakt '+parse(d).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short'});
   $('vStart').textContent=st==='syk'?'Meldt syk':'Fri eller byttet bort';
   $('vTid').textContent='Teller ikke i rekka. Bets denne dagen får innsatsen tilbake.';
-  $('hint').textContent='Trykk på minuttene for å lagre for valgt dato.';return;
+  $('hint').textContent='Trykk på minuttene, skriv gjerne et notat, og trykk Lagre.';return;
  }
- if(!v){box.hidden=true;$('hint').textContent='Trykk på minuttene for å lagre for valgt dato.';return}
+ if(!v){box.hidden=true;$('hint').textContent='Trykk på minuttene, skriv gjerne et notat, og trykk Lagre.';return}
  const today=d===iso(new Date());
  box.hidden=false;
  $('vCode').textContent=v.kode;
@@ -343,14 +355,14 @@ function vakt(){
  const done=entries.some(e=>e.date===d);
  nowMin=today&&!done&&late>0&&cur<toMin(v.slutt)?late:0;
  $('vNow').hidden=!nowMin;
- if(nowMin)$('vNow').replaceChildren('Hun kom nå ('+pad(n.getHours())+':'+pad(n.getMinutes())+') · '+fmt(nowMin),el('small',null,'Trykk for å lagre'));
+ if(nowMin)$('vNow').replaceChildren('Hun kom nå ('+pad(n.getHours())+':'+pad(n.getMinutes())+') · '+fmt(nowMin),el('small',null,'Trykk for å fylle inn'));
  $('vOk').hidden=!(today&&!done&&late<=0);
  // Before shift start: one tap settles today as «i tide» (with the arrival time, so ≥5 min early is a Mirakel).
  const settled=betData&&betData.results&&betData.results[d],tn=!done&&!settled&&window.tidligNaa?tidligNaa(d):null;
  $('vTide').hidden=!(tn&&tn.tidlig<=60);
  if(tn)$('vTide').replaceChildren('Hun er her nå ('+tn.kl+') · i tide',el('small',null,tn.tidlig+' min før vakta'));
  $('vOk').textContent='Vakta starter '+v.start+'. Ikke for sent ennå.';
- $('hint').textContent=nowMin?'Eller trykk på minuttene for å lagre for valgt dato.':'Trykk på minuttene for å lagre for valgt dato.';
+ $('hint').textContent=nowMin?'Eller trykk på minuttene, skriv gjerne et notat, og trykk Lagre.':'Trykk på minuttene, skriv gjerne et notat, og trykk Lagre.';
 }
 $('vTide').onclick=async()=>{
  const d=iso(new Date()),tn=window.tidligNaa&&tidligNaa(d);if(!tn)return vakt();
@@ -408,7 +420,7 @@ function turnVarsel(){
 }
 $('turnOpen').onclick=()=>$('gear').click();
 $('turnX').onclick=()=>{try{localStorage.setItem('forsinkelseslogg:turnusvarsel',sisteVakt())}catch(e){}$('turnVarsel').hidden=true};
-$('vNow').onclick=()=>{if(nowMin){const m=nowMin;nowMin=0;spin(m);vakt()}};
+$('vNow').onclick=()=>{if(nowMin)spin(nowMin)};
 setInterval(()=>{if(!document.hidden)vakt()},20000);
 $('date').addEventListener('change',vakt);
 $('date').addEventListener('change',checkDup);
