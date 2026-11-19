@@ -622,6 +622,9 @@ function jackpot(){
  const fresh=days.filter(x=>!seen.includes(x));if(!fresh.length)return;
  try{localStorage.setItem(K,JSON.stringify(days))}catch(e){}
  const won=data.bets.filter(b=>fresh.includes(b.date)&&b.profile===me&&b.payout!=null).reduce((s,b)=>s+b.payout-b.stake,0);
+ // A bet lost or won on the newly settled days gets a remark (fx.js waits until the winner reveal is closed).
+ const mine=data.bets.filter(b=>fresh.includes(b.date)&&b.profile===me&&b.payout!=null&&!(data.results[b.date]||{}).void);
+ if(mine.length&&won&&window.kasinoMsg)kasinoMsg(won>0?'vunnet':mine.some(b=>!(data.results[b.date]||{}).min)?'taptTide':'tapt');
  const anim=window.fx&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
  const chipsIn=()=>{const pb=document.querySelector('.player[aria-pressed=true]');if(pb&&anim){fx.flash(pb);fx.landChips(pb,Math.round(won/5))}};
  // Winner reveal (vinner.js) for the latest newly settled day that had bets; each phone sees it once.
@@ -663,6 +666,7 @@ function loanUI(){
  const L=data.loan||{amount:20,repay:25,below:10},bal=(data.profiles.find(p=>p.id===me)||{}).balance??100,ln=myLoan(me);
  const can=!ln&&bal<L.below&&data.month;
  $('loanRow').hidden=!ln&&!can;
+ if(can&&selMonth===data.month){const k='forsinkelseslogg:tom:'+data.month+':'+me;try{if(!localStorage.getItem(k)){localStorage.setItem(k,'1');if(window.kasinoMsg)kasinoMsg('tom')}}catch(e){}}
  $('loanBtn').hidden=!can;$('loanBtn').textContent='Lån '+L.amount+U+' av banken';
  $('loanTxt').textContent=ln?name(me)+' har lånt '+ln.amount+U+' denne måneden. '+ln.repay+' trekkes fra startkapitalen neste måned. Banken er tålmodig, men ikke snill.'
   :can?'Nesten tom? Banken låner deg '+L.amount+U+' én gang i måneden. Du betaler tilbake '+L.repay+' fra neste måneds start.':'';

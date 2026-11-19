@@ -30,9 +30,9 @@
 
   // H6: remarks for the shift she is late for. Shown about one time in three.
   const VMSG = {
-    Dag: ["Sola sto også opp i dag. Den rakk det.", "07:30 er et klokkeslett, ikke et forslag.", "Gipsen tørker raskere enn hun kommer seg på jobb.", "Dagvakt betyr at vakta starter på dagen. Denne dagen.", "Morgenmøtet hadde vært fint. Det var i går også."],
-    A1: ["Halv tolv hadde også vært et alternativ.", "Vakta starter 12. Formiddagen var visst ikke lang nok.", "Lunsjtid for alle andre. Oppmøtetid for henne. I teorien."],
-    A2: ["Lunsjen er over for alle andre.", "Vakta starter klokka 13. Det er etter frokost, lunsj og en lang lur.", "Hele formiddagen til rådighet, og likevel.", "Kveldsvakt og fortsatt sen. Imponerende."],
+    Dag: ["Sola sto også opp i dag. Den rakk det.", "07:30 er et klokkeslett, ikke et forslag.", "Gipsen tørker raskere enn hun kommer seg på jobb.", "Dagvakt betyr at vakta starter på dagen. Denne dagen.", "Morgenmøtet hadde vært fint. Det var i går også.", "07:30 kommer hver dag. Det er noe av det mest forutsigbare som finnes.", "Vakta starter 07:30. Ikke «halv åtte-ish».", "Ikke se på oss. Det var du som valgte dagvakt."],
+    A1: ["Halv tolv hadde også vært et alternativ.", "Vakta starter 12. Formiddagen var visst ikke lang nok.", "Lunsjtid for alle andre. Oppmøtetid for henne. I teorien.", "Klokka 12 er midt på dagen. Den kommer ikke overraskende.", "Formiddagen var lang. Det var visst dyna også.", "12:00 er både lunsj og vaktstart. Vi tipper hva hun velger."],
+    A2: ["Lunsjen er over for alle andre.", "Vakta starter klokka 13. Det er etter frokost, lunsj og en lang lur.", "Hele formiddagen til rådighet, og likevel.", "Kveldsvakt og fortsatt sen. Imponerende.", "13:00. Selv B-mennesker er våkne nå.", "Vakta starter 13. Ikke 13:15, ikke «etter kaffen».", "Hun har hele formiddagen. Hun bruker hele formiddagen."],
   };
   window.vaktMsg = (kode) => {
     if (Math.random() > 0.35 || !window.fxCard) return false;

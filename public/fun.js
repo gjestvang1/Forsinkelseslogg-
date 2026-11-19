@@ -37,16 +37,24 @@
     (m) => m >= 1 && "= " + Math.round(m * 60) + " sekunder kollegaene aldri får tilbake",
     (m) => m >= 1 && "= " + Math.round(m * 70) + " hjerteslag av ren venting",
     (m) => m >= 45 && "= en halv fotballkamp. Hun ville kommet til andre omgang.",
+    (m) => m >= 12 && "= " + unit(m / 12, "hånd", "hender") + " med buddy loops på alle fingrene",
+    (m) => m >= 10 && "= " + unit(m / 10, "kontrollrøntgen", "kontrollrøntgen") + " av samme håndledd",
+    (m) => m >= 2 && "= " + Math.round(m / 2) + " håndvasker etter smittevernreglene",
+    (m) => m >= 2 && "= " + Math.round(m / 2) + " ganger noen sa «hvor er hun?»",
+    (m) => m >= 7 && "= " + unit(m / 7, "tur", "turer") + " med heisen som stopper i alle etasjer",
+    (m) => m >= 2 && "= " + Math.round(m / 2) + " pasienter som rakk å spørre «er det lenge igjen?»",
+    (m) => m >= 60 && "= en hel ventetid på legevakta. Nesten.",
+    (m) => m >= 20 && "= " + unit(m / 10, "gips", "gipser") + " som rakk å stivne",
   ];
   const ZERO = ["0 min = 0 gipsede hender. Mistenkelig.", "0 min. Kaffen er fortsatt varm.", "0 min = tid til ingenting. Imponerende."];
 
   // i1: a subtitle that follows the week's total.
   const SUB = [
-    [0, ["Rolig uke. Mistenkelig rolig.", "Null minutter. Noen bør sjekke at appen virker.", "Så langt, så punktlig. Vi følger med."]],
-    [15, ["Litt sent, litt søtt.", "Småsent. Nesten innenfor feilmarginen.", "Et par minutter her og der. Hvem teller? (Vi.)"]],
-    [45, ["Kaffemaskinen har gitt opp å vente.", "Det begynner å bli en vane.", "Klokka på veggen har begynt å sukke."]],
-    [90, ["Nå snakker vi forsinkelse.", "Klokka på kontoret har begynt å ta det personlig.", "Sjefen har begynt å spørre."]],
-    [1e9, ["Rekordjakt pågår.", "Dette er ikke lenger forsinkelse, det er en livsstil.", "Noen bør vurdere en vekkerklokke. Eller tre."]],
+    [0, ["Rolig uke. Mistenkelig rolig.", "Null minutter. Noen bør sjekke at appen virker.", "Så langt, så punktlig. Vi følger med.", "Ingen forsinkelser ennå. Vi holder pusten.", "Null minutter. Appen kjeder seg.", "Rent rulleblad. Det er tidlig i uka."]],
+    [15, ["Litt sent, litt søtt.", "Småsent. Nesten innenfor feilmarginen.", "Et par minutter her og der. Hvem teller? (Vi.)", "Bare noen få minutter. Sier hun.", "Små beløp, men renta løper.", "Litt sent er også sent."]],
+    [45, ["Kaffemaskinen har gitt opp å vente.", "Det begynner å bli en vane.", "Klokka på veggen har begynt å sukke.", "Nå begynner det å koste.", "Snart en hel lunsjpause. Uten lunsj."]],
+    [90, ["Nå snakker vi forsinkelse.", "Klokka på kontoret har begynt å ta det personlig.", "Sjefen har begynt å spørre.", "Vi har sluttet å bli overrasket.", "Uka hennes er en arbeidsdag kortere enn vår. Nesten."]],
+    [1e9, ["Rekordjakt pågår.", "Dette er ikke lenger forsinkelse, det er en livsstil.", "Noen bør vurdere en vekkerklokke. Eller tre.", "Hun bør få sin egen tidssone.", "Uka går mot rekord. Hun går mot jobb. Sakte.", "Vi vurderer å flytte morgenmøtet til lunsj."]],
   ];
 
   function el(tag, cls, after) { let e = document.querySelector(tag + "." + cls); if (!e) { e = document.createElement(tag); e.className = cls; after.insertAdjacentElement("afterend", e); } return e; }
