@@ -147,6 +147,7 @@ main{position:relative}
 .betCard h3{margin:0}
 .quickd{display:flex;gap:6px;flex-wrap:wrap}
 .quickd button{flex:1;min-width:0;font:inherit;font-weight:600;font-size:.95rem;min-height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:var(--ink);cursor:pointer}
+.quickd button:nth-child(3){flex:1.4;white-space:nowrap;font-size:.88rem}
 .quickd button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--felt-lo,#0B2F25)}
 </style>
 <link rel="stylesheet" href="/theme.css">
@@ -305,7 +306,7 @@ async function load(){
   data=j;
   if(j.tema&&window.gipsInnst)gipsInnst(j.tema);
   if(prev)announce(data.bets.filter(b=>b.profile!==me&&prev[b.id]!==b.ts));
-  if(!today){today=data.today;$('date').min=today;$('date').value=today}
+  if(!today){today=data.today;$('date').min=today;$('date').value=venterDag&&venterDag>=today?venterDag:today;venterDag=''}
   today=data.today;
   $('stat').textContent='Delt mellom alle med lenken, oppdateres automatisk.';
  }catch(e){$('stat').textContent='Får ikke kontakt med serveren akkurat nå. Prøver igjen …'}
@@ -345,9 +346,19 @@ const run=async(fn,err)=>{if(err)$(err).textContent='';try{await fn();await load
 $('date').addEventListener('change',()=>{side=null;render()});
 // Quick dates: today and tomorrow (shift work, so weekends count like any other day).
 const addDays=(d,n)=>{const[y,m,dd]=d.split('-').map(Number),x=new Date(Date.UTC(y,m-1,dd+n));return x.toISOString().slice(0,10)};
+// «Neste vakt» from Logg: choose that date here (also before the first load, and via /?dag=…).
+let venterDag=(()=>{let q=location.search;try{q+=parent.location.search}catch(e){}const m=/[?&]dag=(\d{4}-\d\d-\d\d)/.exec(q);return m?m[1]:''})();
+window.velgBetDag=d=>{
+ if(!d)return;if(!today){venterDag=d;return}
+ if(d<today)d=today;$('date').value=d;side=null;render();
+ setTimeout(()=>($('quickd').closest('.card').previousElementSibling||$('quickd')).scrollIntoView({behavior:'smooth',block:'start'}),350);
+};
 function quickDates(){
  const box=$('quickd');if(!today)return;
  const opts=[['I dag',today],['I morgen',addDays(today,1)]];
+ // The next shift after tomorrow gets its own button (shift work: it may be days away).
+ if(window.nesteVakt){vaktPlan();const nv=nesteVakt(today);
+  if(nv&&nv.date!==addDays(today,1))opts.push(['Neste · '+parse(nv.date).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric'}).replace('.',''),nv.date])}
  const cur=$('date').value;box.replaceChildren();
  opts.forEach(([t,d])=>{const b=el('button',null,t);b.type='button';b.setAttribute('aria-pressed',cur===d);b.onclick=()=>{$('date').value=d;side=null;render()};box.appendChild(b)});
 }

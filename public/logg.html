@@ -79,6 +79,8 @@ button{font:inherit;cursor:pointer;border-radius:6px}
 .nowbtn.tide{margin-top:8px;background:transparent;color:var(--good);border:2px solid var(--good);min-height:46px;font-size:.98rem}
 .vaktok{margin:0;color:var(--good);font-size:.9rem;text-align:center}
 #vaktBox{display:grid;gap:10px}#vaktBox[hidden]{display:none}
+.vakt.neste{flex-wrap:wrap}.vakt.neste[hidden]{display:none}.vakt.neste .code{background:rgba(246,235,208,.85)}
+.vakt.neste .nbet{flex:1 0 100%;min-height:46px;border-radius:999px;border:2px solid var(--accent);background:transparent;color:var(--accent);font:inherit;font-weight:800;font-size:.98rem;cursor:pointer}
 .hint{margin:0;color:var(--mute);font-size:.82rem}
 .chips .chip{min-height:44px;padding:8px 14px;font-size:1rem}
 .chips .chip.naa{border-style:solid;background:var(--accent);color:#0B2F25;font-weight:800}
@@ -183,6 +185,7 @@ main{position:relative}
    <p class="vaktok" id="vOk" hidden></p>
    <button type="button" class="nowbtn tide" id="vTide" hidden></button>
   </div>
+  <div class="vakt neste" id="nesteBox" hidden><div class="code" id="nCode"></div><div class="t"><small id="nLbl">Neste vakt</small><b id="nDag"></b><small id="nTid"></small></div><button type="button" class="nbet" id="nBet">🎲 Bet på denne vakta</button></div>
   <button type="button" class="vedit" id="vEdit">Syk, fri eller byttet vakt?</button>
   <div class="veditBox" id="vEditBox" hidden><p class="hint" id="vEditT"></p><div class="chips vpal" id="vPal"></div><p class="err" id="vEditErr" role="alert"></p></div>
   <p class="hint" id="hint">Trykk på minuttene, skriv gjerne et notat, og trykk Lagre.</p>
@@ -327,10 +330,32 @@ function checkDup(){
  box.hidden=false;markChip();
 }
 // Dagens vakt (public/vakter.js): viser oppmøtetid, og etter oppmøte en knapp som lagrer
-// minuttene fra vaktstart til nå. Ingenting vises på fridager og fraværsdager.
+// minuttene fra vaktstart til nå. På fridager, fraværsdager og etter at dagens vakt er slutt
+// vises neste vakt i stedet, med en knapp som åpner Betting med den datoen valgt.
 const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
 let nowMin=0;
-function vakt(){
+function vakt(){vakt0();neste()}
+function neste(){
+ const d=$('date').value,box=$('nesteBox'),t=iso(new Date());
+ if(kind!=='sent'||!d||d<t||!window.nesteVakt){box.hidden=true;return}
+ const v=window.vaktFor?vaktFor(d):null,n=new Date(),cur=n.getHours()*60+n.getMinutes();
+ // Only when the chosen day has no shift, or it is today and the shift is over.
+ if(v&&!(d===t&&cur>=toMin(v.slutt))){box.hidden=true;return}
+ const nv=nesteVakt(d);if(!nv){box.hidden=true;return}
+ const fra=Math.round((parse(nv.date)-parse(t))/864e5);
+ box.hidden=false;nesteDato=nv.date;
+ $('nCode').textContent=nv.kode;
+ $('nLbl').textContent='Neste vakt · '+(fra===1?'i morgen':'om '+fra+' dager');
+ const dag=parse(nv.date).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'});
+ $('nDag').textContent=dag.charAt(0).toUpperCase()+dag.slice(1);
+ $('nTid').textContent='Oppmøte '+nv.start+' · '+nv.start+'–'+nv.slutt;
+}
+let nesteDato='';
+$('nBet').onclick=()=>{
+ try{const w=parent.document.getElementById('f1').contentWindow;if(w&&w.velgBetDag&&parent.pager){w.velgBetDag(nesteDato);return parent.pager.go(1)}}catch(e){}
+ location.href='/?dag='+nesteDato+'#betting';
+};
+function vakt0(){
  const d=$('date').value,v=kind==='sent'&&d&&window.vaktFor?vaktFor(d):null,box=$('vaktBox');
  $('vEdit').hidden=kind!=='sent'||!d;if(kind!=='sent')$('vEditBox').hidden=true;
  if(!$('vEditBox').hidden)vEditUI(d);
