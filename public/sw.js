@@ -4,7 +4,7 @@
 // the network fails or takes longer than a few seconds does the saved copy answer instead.
 const CACHE = "forsinkelseslogg-v1";
 // At deploy, scripts/versjon.mjs swaps the .js/.css names below for their hashed /a/ copies.
-const SHELL = ["/", "/logg.html", "/betting.html", "/statistikk.html", "/theme.css", "/tema.js", "/gips.js", "/vakter.js", "/poll.js", "/reg.js", "/swipe.js", "/fx.js", "/fun.js", "/runde2.js", "/mirakel.js", "/maaned.js", "/nyttaar.js", "/bord.js", "/vinner.js", "/manifest.webmanifest", "/icon-192.png", "/apple-touch-icon.png"];
+const SHELL = ["/", "/logg.html", "/betting.html", "/statistikk.html", "/theme.css", "/tema.js", "/gips.js", "/vakter.js", "/poll.js", "/reg.js", "/swipe.js", "/fx.js", "/fun.js", "/runde2.js", "/mirakel.js", "/maaned.js", "/nyttaar.js", "/julhilsen.js", "/bord.js", "/vinner.js", "/manifest.webmanifest", "/icon-192.png", "/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
   // Hashed copies already saved from an earlier version are not downloaded again.

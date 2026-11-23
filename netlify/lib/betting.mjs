@@ -7,7 +7,7 @@ const store = () => openStore("betting");
 const logStore = () => openStore("forsinkelser");
 const START = 100;
 // G3: the bank lends LOAN once a month to a nearly broke player; REPAY is taken from next month's start.
-const LOAN = 20, REPAY = 25, LOAN_BELOW = 10;
+const LOAN = 20, REPAY = 25, LOAN_BELOW = 10, GAVE = 10;
 // Fixed price per bet type, so every bet in a pot weighs the same.
 const STAKES = { yn: 5, min: 10 };
 const PROFILES = ["p1", "p2", "p3"];
@@ -72,7 +72,7 @@ const nextMonth = (m) => { const [y, mo] = m.split("-").map(Number); return mo =
 
 async function state() {
   const s = store();
-  const [stored, rounds, names, log, resetList, loans, plan] = await Promise.all([
+  const [stored, rounds, names, log, resetList, loans, plan, gaver] = await Promise.all([
     all(s, "bet/"),
     all(s, "round/"),
     s.get("profiles", { type: "json" }),
@@ -80,6 +80,7 @@ async function state() {
     all(s, "reset/"),
     all(s, "loan/"),
     openStore("vakter").get("plan", { type: "json" }).then((p) => p || {}).catch(() => ({})),
+    all(s, "gave/"),
   ]);
   // A reset voids that month's bets placed before it; they are kept, just no longer counted.
   const resets = Object.fromEntries(resetList.map((x) => [x.month, x.ts]));
@@ -91,8 +92,10 @@ async function state() {
     (months[l.month] ||= fresh())[l.profile] += l.amount || LOAN;
     (months[nextMonth(l.month)] ||= fresh())[l.profile] -= l.repay || REPAY;
   }
+  // December welcome gift (julhilsen.js): +GAVE once per profile, in the month it was taken.
+  for (const g of gaver) (months[g.month] ||= fresh())[g.profile] += g.amount || GAVE;
   const balances = months[monthOf(todayOslo())];
-  return { bets, res, months, balances, resets, loans, plan, names: { ...DEFAULT_NAMES, ...(names || {}) } };
+  return { bets, res, months, balances, resets, loans, gaver, plan, names: { ...DEFAULT_NAMES, ...(names || {}) } };
 }
 
 // Push keys are made on first use and kept in the store, so no setup is needed in Netlify.
@@ -159,4 +162,4 @@ async function notifyResult(s, date) {
   });
 }
 
-export { LOAN, REPAY, LOAN_BELOW, KINDS, kinds, dayLabel, push, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, all, state, vapid, subKey, notifyBet, notifyResult };
+export { LOAN, REPAY, LOAN_BELOW, GAVE, KINDS, kinds, dayLabel, push, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, all, state, vapid, subKey, notifyBet, notifyResult };
