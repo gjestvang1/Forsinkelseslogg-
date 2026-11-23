@@ -11,19 +11,11 @@
   const q = location.search, now = new Date(), y = String(now.getFullYear());
   const md = String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
   const des = md.startsWith("12-");
-  const rnd = (a) => a[Math.floor(Math.random() * a.length)];
   const mk = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
 
-  // H7, H8, J1 and P3 from the suggestions, combined into three cards (one is drawn at random).
-  const JUL = [
-    { h: "Glade jul!", sub: "Sjetongene er byttet ut med pepperkaker.", txt: "Nissen rekker hele verden på én natt. Hun rekker ikke 07:30." },
-    { h: "God jul!", sub: "Desember har 31 dager og like mange sjanser til å komme for sent.", txt: "Pepperkakene er ferske. Det er ikke unnskyldningene hennes." },
-    { h: "Glade jul!", sub: "Sjetongene er byttet ut med pepperkaker. Desember har 31 dager og like mange sjanser til å komme for sent.", txt: "Nissen rekker hele verden på én natt. Hun rekker ikke 07:30. Pepperkakene er ferske. Det er ikke unnskyldningene hennes." },
-  ];
-  const JULAFTEN = [
-    { h: "God julaften!", sub: "I dag er det lov å komme for sent.", txt: "Til julemiddagen, altså. Ikke på jobb. Nissen fører logg han også." },
-    { h: "God julaften!", sub: "Nissen kom presis. Det er mulig.", txt: "Pepperkakene i lommeboka er dine. Forsinkelsene hennes er fortsatt våre." },
-  ];
+  // H7, H8, J1 and P3 from the suggestions, all on one card (the user's pick of three combinations).
+  const JUL = { h: "Glade jul!", sub: "Sjetongene er byttet ut med pepperkaker. Desember har 31 dager og like mange sjanser til å komme for sent.", txt: "Nissen rekker hele verden på én natt. Hun rekker ikke 07:30. Pepperkakene er ferske. Det er ikke unnskyldningene hennes." };
+  const JULAFTEN = { h: "God julaften!", sub: "I dag er det lov å komme for sent.", txt: "Til julemiddagen, altså. Ikke på jobb. Nissen fører logg han også." };
   const LUCIA = { h: "God lucia!", txt: "Lucia rakk ikke fram med lussekattene i tide. Vi skjønner hvem hun har lært det av." };
 
   const CSS = `
@@ -155,7 +147,7 @@
   }
 
   function jul(done) {
-    const o = overlay(), c = rnd(JUL);
+    const o = overlay(), c = JUL;
     const showCard = () => { const k = card(o, "🎄", c, gave(), "God jul! 🍪", done); const r = k.getBoundingClientRect(); burst(o, r.left + r.width / 2, r.top + 40, 22); };
     if (still) return showCard();
     // V2: the sleigh flies over and drops the present in a parachute. V3: tap it to unwrap.
@@ -189,7 +181,7 @@
   }
 
   function julaften(done) {
-    const o = overlay(), k = card(o, "🎁", rnd(JULAFTEN), null, "God jul! 🎅", done);
+    const o = overlay(), k = card(o, "🎁", JULAFTEN, null, "God jul! 🎅", done);
     const r = k.getBoundingClientRect(); burst(o, r.left + r.width / 2, r.top + 40, 18);
   }
 
