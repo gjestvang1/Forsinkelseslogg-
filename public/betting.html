@@ -37,6 +37,9 @@ h3{font-size:1rem;font-weight:600;margin:0}
 .status{font-size:.95rem;margin:0}
 .vakt{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.18)}
 .vakt[hidden]{display:none}
+.vakt.neste{flex-wrap:wrap;margin-bottom:10px;border-color:var(--accent)}.vakt.neste .t b{text-transform:none}
+.nvelg{flex:1 0 100%;min-height:44px;padding:0 14px;border-radius:999px;border:0;background:var(--accent);color:var(--felt-lo,#0B2F25);font:inherit;font-weight:800;font-size:.9rem;cursor:pointer}
+.nvelg[aria-pressed=true]{background:transparent;color:var(--accent);border:2px solid var(--accent)}
 .vakt .code{min-width:48px;height:48px;padding:0 6px;border-radius:10px;background:#F6EBD0;color:#0B2F25;display:grid;place-items:center;font-weight:900;font-size:1rem;box-shadow:0 2px 0 rgba(0,0,0,.35)}
 .vakt.fri .code{background:rgba(0,0,0,.25);color:var(--mute);box-shadow:none;border:1px dashed var(--line)}
 .vakt .t{flex:1;line-height:1.25}.vakt .t small{color:var(--mute);display:block;font-size:.8rem}.vakt .t b{font-size:1rem}
@@ -147,7 +150,6 @@ main{position:relative}
 .betCard h3{margin:0}
 .quickd{display:flex;gap:6px;flex-wrap:wrap}
 .quickd button{flex:1;min-width:0;font:inherit;font-weight:600;font-size:.95rem;min-height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:var(--ink);cursor:pointer}
-.quickd button:nth-child(3){flex:1.4;white-space:nowrap;font-size:.88rem}
 .quickd button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--felt-lo,#0B2F25)}
 </style>
 <link rel="stylesheet" href="/theme.css">
@@ -169,6 +171,7 @@ main{position:relative}
 
  <h2>Velg dag</h2>
  <div class="card">
+  <div class="vakt neste" id="neste" hidden><div class="code" id="nCode"></div><div class="t"><small id="nLbl">Neste vakt</small><b id="nDag"></b><small id="nTid"></small></div><button type="button" class="nvelg" id="nVelg">Bet på denne</button></div>
   <div class="quickd" id="quickd" role="group" aria-label="Hurtigvalg dato"></div>
   <label>Eller velg dato<input type="date" id="date"></label>
   <div class="vakt" id="vakt" hidden><div class="code" id="vCode"></div><div class="t"><small id="vLbl"></small><b id="vStart"></b><small id="vTid"></small></div></div>
@@ -353,12 +356,30 @@ window.velgBetDag=d=>{
  if(d<today)d=today;$('date').value=d;side=null;render();
  setTimeout(()=>($('quickd').closest('.card').previousElementSibling||$('quickd')).scrollIntoView({behavior:'smooth',block:'start'}),350);
 };
+// Neste vakt: today's shift until it ends, then the next planned one. One tap picks that date.
+let nesteD='';
+function neste(){
+ const box=$('neste');if(!today||!window.nesteVakt){box.hidden=true;return}
+ vaktPlan();
+ const n=new Date(),cur=n.getHours()*60+n.getMinutes(),tv=window.vaktFor?vaktFor(today):null;
+ const tm=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
+ const nv=tv&&cur<tm(tv.slutt)?{date:today,...tv}:nesteVakt(today);
+ if(!nv){box.hidden=true;return}
+ nesteD=nv.date;box.hidden=false;
+ const fra=Math.round((parse(nv.date)-parse(today))/864e5);
+ $('nCode').textContent=nv.kode;
+ $('nLbl').textContent=fra===0?'Neste vakt · i dag':'Neste vakt · '+(fra===1?'i morgen':'om '+fra+' dager');
+ const dag=parse(nv.date).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'});
+ $('nDag').textContent=dag.charAt(0).toUpperCase()+dag.slice(1);
+ $('nTid').textContent='Oppmøte '+nv.start+' · '+nv.start+'–'+nv.slutt;
+ const valgt=$('date').value===nv.date;$('nVelg').setAttribute('aria-pressed',valgt);$('nVelg').textContent=valgt?'✓ Valgt':'Bet på denne';
+}
+$('nVelg').onclick=()=>{if(nesteD){$('date').value=nesteD;side=null;render()}};
 function quickDates(){
+ neste();
  const box=$('quickd');if(!today)return;
  const opts=[['I dag',today],['I morgen',addDays(today,1)]];
- // The next shift after tomorrow gets its own button (shift work: it may be days away).
- if(window.nesteVakt){vaktPlan();const nv=nesteVakt(today);
-  if(nv&&nv.date!==addDays(today,1))opts.push(['Neste · '+parse(nv.date).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric'}).replace('.',''),nv.date])}
+
  const cur=$('date').value;box.replaceChildren();
  opts.forEach(([t,d])=>{const b=el('button',null,t);b.type='button';b.setAttribute('aria-pressed',cur===d);b.onclick=()=>{$('date').value=d;side=null;render()};box.appendChild(b)});
 }
