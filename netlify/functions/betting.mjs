@@ -1,5 +1,5 @@
 import { openStore, allRev, cachedBody } from "../lib/snap.mjs";
-import { LOAN, REPAY, LOAN_BELOW, kinds, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, state, vapid, subKey, notifyBet, notifyResult } from "../lib/betting.mjs";
+import { LOAN, REPAY, LOAN_BELOW, GAVE, kinds, store, monthOf, fresh, START, STAKES, PROFILES, DATE, todayOslo, state, vapid, subKey, notifyBet, notifyResult } from "../lib/betting.mjs";
 
 // Betting on the delay log. Bets, profile names and manual results live in
 // their own store; the delay entries are read from the log's store so a
@@ -30,14 +30,14 @@ export default async (req) => {
     if (new URL(req.url).searchParams.get("v") === v) return json({ same: true, v });
     // Built once per version; the other phones get the same answer with one more read.
     const body = await cachedBody("betting", v, async () => {
-      const { bets, res, months, balances, resets, names, loans } = await state();
+      const { bets, res, months, balances, resets, names, loans, gaver } = await state();
       // Guesses stay hidden until the day is settled, so nobody can undercut by one minute.
       const shown = bets.map((b) => (res[b.date] || b.type !== "min" ? b : { ...b, guess: null }));
       const profiles = PROFILES.map((id) => ({ id, name: names[id], balance: balances[id] }));
       const vapidKey = (await vapid(s)).publicKey;
       // The plaster theme is shared: Betting picks up the switch from here, like Logg does from /api/alt.
       const ti = (await openStore("vakter").get("innst", { type: "json" }).catch(() => null)) || {};
-      return { keep: true, body: JSON.stringify({ tema: { gips: !!ti.gips, gipsdag: ti.gipsdag || "" }, v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN, loans, loan: { amount: LOAN, repay: REPAY, below: LOAN_BELOW } }) };
+      return { keep: true, body: JSON.stringify({ tema: { gips: !!ti.gips, gipsdag: ti.gipsdag || "" }, v, profiles, months, month: monthOf(todayOslo()), resets, bets: shown, results: res, today: todayOslo(), start: START, stakes: STAKES, vapidKey, needsCode: !!writeCode(), admin: ADMIN, loans, gaver, loan: { amount: LOAN, repay: REPAY, below: LOAN_BELOW } }) };
     });
     return new Response(body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
   }
@@ -61,7 +61,7 @@ export default async (req) => {
   if (req.method === "POST") {
     let b;
     try { b = await req.json(); } catch { return json({ error: "Ugyldig data" }, 400); }
-    const { bets, res, months, names, loans, plan } = await state();
+    const { bets, res, months, names, loans, gaver, plan } = await state();
 
     if (b.action === "rename") {
       const name = String(b.name || "").trim().slice(0, 20);
@@ -85,6 +85,16 @@ export default async (req) => {
       if (bal >= LOAN_BELOW) return json({ error: `Banken låner bare ut til den som har under ${LOAN_BELOW} igjen.` }, 400);
       await s.setJSON(`loan/${month}/${b.profile}`, { month, profile: b.profile, amount: LOAN, repay: REPAY, ts: Date.now() });
       return json({ ok: true });
+    }
+
+    if (b.action === "gave") {
+      // Christmas welcome card: GAVE pepperkaker once per profile, only in December.
+      if (!PROFILES.includes(b.profile)) return json({ error: "Ukjent profil" }, 400);
+      const month = monthOf(todayOslo());
+      if (!month.endsWith("-12")) return json({ error: "Julegaven deles bare ut i desember." }, 400);
+      if (gaver.some((g) => g.month === month && g.profile === b.profile)) return json({ error: "Nissen har allerede vært innom deg i år." }, 409);
+      await s.setJSON(`gave/${month}/${b.profile}`, { month, profile: b.profile, amount: GAVE, ts: Date.now() });
+      return json({ ok: true, amount: GAVE });
     }
 
     if (!DATE.test(b.date || "")) return json({ error: "Ugyldig dato" }, 400);
