@@ -47,6 +47,15 @@ window.vaktFor = (date) => {
   const k = window.vaktKode(date), t = k && window.VAKTKODER[k];
   return t ? { kode: k, start: t[0], slutt: t[1] } : null;
 };
+// Neste vakt etter en dato (ÅÅÅÅ-MM-DD), eller null om turnusen ikke er lagt inn så langt.
+window.nesteVakt = (etter) => {
+  const [y, m, d] = etter.split("-").map(Number);
+  for (let i = 1; i <= 120; i++) {
+    const k = new Date(Date.UTC(y, m - 1, d + i)).toISOString().slice(0, 10), v = window.vaktFor(k);
+    if (v) return { date: k, dager: i, ...v };
+  }
+  return null;
+};
 window.lastVakter = async () => {
   try {
     const r = await fetch("/api/vakter", { cache: "no-store" });
