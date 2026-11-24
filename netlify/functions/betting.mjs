@@ -20,7 +20,7 @@ const authorized = (req) => {
 
 const ADMIN = "p1";
 // Double bet on sickness and delay the same day: a remark from the house instead of a plain error.
-const DOBBEL_TXT = ["Pent forsøk. Å bette på at hun er syk OG for sen er som å gipse begge armene og håpe å klø seg på nesa.", "Huset sier nei. Hun er enten syk eller sen, ikke begge deler. Selv om hun sikkert har prøvd.", "Dobbeltbetting på sykdom og forsinkelse? Det er innsidehandel med snørr.", "Dealeren ser deg. Velg om du vil ha henne i senga eller på bussen, ikke begge.", "Dette lukter forsikringssvindel. Ett bet per dag på henne: syk ELLER sen.", "Hun kan ikke komme for sent til en vakt hun ligger hjemme og snyter seg gjennom.", "Du prøver å tette begge hullene samtidig. Det funker like dårlig her som med omgangssyke.", "Selv et CTS-inngrep tar bare én hånd om gangen. Syk eller sen, velg én."];
+const DOBBEL_TXT = ["Huset sier nei. Hun er enten syk eller sen, ikke begge deler. Selv om hun sikkert har prøvd."];
 const dobbel = () => "🃏 " + DOBBEL_TXT[Math.floor(Math.random() * DOBBEL_TXT.length)] + " Trekk det andre bettet først.";
 
 export default async (req) => {

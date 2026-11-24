@@ -472,7 +472,7 @@ $('late').onclick=()=>{
 $('onTime').onclick=()=>{const d=$('date').value,tn=window.tidligNaa?tidligNaa(d):null;if(confirm('Avgjøre '+dayName(d)+' som «i tide»?'+(tn?' Hun kom '+tn.kl+', '+tn.tidlig+' min før vakta.':'')))run(async()=>{await api('POST',{action:'settle',date:d,...(tn?{kl:tn.kl,tidlig:tn.tidlig}:{})});if(tn&&tn.tidlig>=5&&window.mirakel)mirakel({tidlig:tn.tidlig,kl:tn.kl,dato:d});else if(window.kasinoMsg)kasinoMsg('tide')})};
 $('reopen').onclick=()=>run(()=>api('POST',{action:'reopen',date:$('date').value}));
 // A player can't bet on both sickness and the delay the same day (the server says no too).
-const DOBBEL_TXT=["Pent forsøk. Å bette på at hun er syk OG for sen er som å gipse begge armene og håpe å klø seg på nesa.", "Huset sier nei. Hun er enten syk eller sen, ikke begge deler. Selv om hun sikkert har prøvd.", "Dobbeltbetting på sykdom og forsinkelse? Det er innsidehandel med snørr.", "Dealeren ser deg. Velg om du vil ha henne i senga eller på bussen, ikke begge.", "Dette lukter forsikringssvindel. Ett bet per dag på henne: syk ELLER sen.", "Hun kan ikke komme for sent til en vakt hun ligger hjemme og snyter seg gjennom.", "Du prøver å tette begge hullene samtidig. Det funker like dårlig her som med omgangssyke.", "Selv et CTS-inngrep tar bare én hånd om gangen. Syk eller sen, velg én."];
+const DOBBEL_TXT=["Huset sier nei. Hun er enten syk eller sen, ikke begge deler. Selv om hun sikkert har prøvd."];
 const husKommentar=id=>{const e=$(id);e.textContent=dobbelTxt();e.classList.add('dobbel')};
 const dobbelTxt=()=>'🃏 '+DOBBEL_TXT[Math.floor(Math.random()*DOBBEL_TXT.length)]+' Trekk det andre bettet først.';
 const dobbel=t=>data.bets.some(b=>b.date===$('date').value&&b.profile===me&&(b.type==='syk')!==(t==='syk'));
