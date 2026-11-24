@@ -21,7 +21,7 @@
 .bord .stack{position:relative;display:grid;justify-items:center;gap:3px}
 .bord .chips{position:relative;width:26px;height:calc(26px + var(--n,1) * 3px)}
 .bord .chips i{position:absolute;left:0;width:26px;height:26px;border-radius:50%;bottom:calc(var(--k) * 3px);background:radial-gradient(circle,var(--c) 0 34%,#F6EBD0 35% 40%,var(--c) 41%);box-shadow:0 0 0 2px var(--c),0 1px 0 2px rgba(0,0,0,.35);border:2px dashed rgba(246,235,208,.85);box-sizing:border-box}
-.bord .stack.ja{--c:#B3212F}.bord .stack.nei{--c:#1D1D1D}.bord .stack.min{--c:#2A5BD7}
+.bord .stack.ja{--c:#B3212F}.bord .stack.nei{--c:#1D1D1D}.bord .stack.min{--c:#2A5BD7}.bord .stack.syk{--c:#2E8B57}
 .bord .stack b{font-size:.66rem;font-weight:800;color:#0B2F25;background:#F6EBD0;border-radius:999px;padding:1px 6px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.4)}
 .bord .stack.won b{background:#7BE0A6}.bord .stack.lost{opacity:.55}
 .bord .stack.slide{animation:bordSlide .7s cubic-bezier(.2,.8,.3,1) both}
@@ -59,12 +59,12 @@
       const [px, py] = i === 0 ? [50, 66] : i === 1 ? [33, 50] : i === 2 ? [67, 50] : [50, 30];
       const spot = mk("div", "spot"); spot.style.left = px + "%"; spot.style.top = py + "%";
       mine.forEach((x) => {
-        const kind = x.type === "min" ? "min" : x.late ? "ja" : "nei";
-        const st = mk("div", "stack " + kind + (x.payout != null && o.res && !o.res.void ? (x.payout > x.stake ? " won" : x.payout < x.stake ? " lost" : "") : ""));
+        const kind = x.type === "min" ? "min" : x.type === "syk" ? "syk" : x.late ? "ja" : "nei";
+        const st = mk("div", "stack " + kind + (x.payout != null && o.res && (!o.res.void || (x.type === "syk" && o.res.void === "syk")) ? (x.payout > x.stake ? " won" : x.payout < x.stake ? " lost" : "") : ""));
         const n = Math.max(1, Math.min(8, Math.ceil(x.stake / 10))), ch = mk("div", "chips"); ch.style.setProperty("--n", n);
         for (let k = 0; k < n; k++) { const c = mk("i"); c.style.setProperty("--k", k); ch.appendChild(c); }
         const g = x.type === "min" ? o.guessOf(x) : null;
-        const lbl = (x.type === "min" ? (g == null ? "? min" : g + " min") : x.late ? "Ja" : "Nei") + " · " + x.stake;
+        const lbl = (x.type === "min" ? (g == null ? "? min" : g + " min") : x.type === "syk" ? (x.sick ? "Syk" : "Frisk") : x.late ? "Ja" : "Nei") + " · " + x.stake;
         st.append(ch, mk("b", null, lbl));
         const was = seen.get(x.id);
         if (!still && !freshDay && was !== x.ts) {

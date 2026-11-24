@@ -140,9 +140,10 @@ main{position:relative}
 .players .player{cursor:default}
 .pushHint{display:block;margin:10px 0 0;background:none;border:1px dashed var(--line);border-radius:10px;color:var(--mute);font:inherit;font-size:.88rem;padding:8px 12px;width:100%;text-align:left;cursor:pointer}
 .betCard h3{margin-bottom:10px}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:999px;background:rgba(0,0,0,.22);margin-bottom:14px}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:4px;border-radius:999px;background:rgba(0,0,0,.22);margin-bottom:14px}
 .tabs button{font:inherit;font-weight:600;font-size:.92rem;border:0;border-radius:999px;padding:9px 6px;background:none;color:var(--mute);cursor:pointer}
 .tabs button[aria-selected=true]{background:var(--accent);color:var(--felt-lo,#0B2F25)}
+.err.dobbel{color:var(--accent);font-style:italic}
 .tabs button.has::after{content:" ✓"}
 .q{font-weight:600;margin:0}
 .betCard [role=tabpanel]{display:grid;gap:12px}
@@ -184,7 +185,7 @@ main{position:relative}
  <div id="betting">
   <div class="card betCard">
    <h3>Dagens bet</h3>
-   <div class="tabs" role="tablist"><button type="button" role="tab" id="tabYn" data-tab="yn">Ja/nei</button><button type="button" role="tab" id="tabMin" data-tab="min">Minutter</button></div>
+   <div class="tabs" role="tablist"><button type="button" role="tab" id="tabYn" data-tab="yn">Ja/nei</button><button type="button" role="tab" id="tabMin" data-tab="min">Minutter</button><button type="button" role="tab" id="tabSyk" data-tab="syk">Syk</button></div>
    <div id="pnYn" role="tabpanel">
    <p class="q">Kommer hun for sent?</p>
    <div class="seg"><button type="button" id="ja" aria-pressed="false">Ja</button><button type="button" id="nei" aria-pressed="false">Nei</button></div>
@@ -207,6 +208,17 @@ main{position:relative}
    <p class="err" id="minErr" role="alert"></p>
    <button class="go" id="minGo" type="button">Sett bet</button>
    </div>
+   <div id="pnSyk" role="tabpanel">
+   <p class="q">Blir hun syk?</p>
+   <div class="seg"><button type="button" id="sykJa" aria-pressed="false">Syk</button><button type="button" id="sykNei" aria-pressed="false">Ikke syk</button></div>
+   <p class="pool" id="sykPool"></p>
+   <p class="mine" id="sykMine" hidden></p>
+   <p class="err" id="sykErr" role="alert"></p>
+   <p class="stakeLbl">Innsats (credits)</p>
+   <div class="chips" id="sykChips"></div>
+   <label id="sykOwn" hidden>Eget beløp (cr)<input type="number" id="sykStake" min="1" step="1" inputmode="numeric" placeholder="f.eks. 35"></label>
+   <button class="go" id="sykGo" type="button">Sett bet</button>
+   </div>
   </div>
  </div>
  <div id="result"></div>
@@ -227,6 +239,7 @@ main{position:relative}
   <p>Dagen avgjøres når noen trykker «Hun kom for sent» (minuttene lagres i loggen) eller «Hun kom i tide», eller når en forsinkelse registreres i loggen.</p>
   <p>Du velger innsatsen selv med knappene, eller skriver inn et eget beløp. Alle som traff ja/nei deler det de som bommet satset, i forhold til hvor mye hver satset, og får sin egen innsats tilbake.</p>
   <p>På minutter vinner den som gjetter nærmest hele potten. Er flere like nære, deles potten i forhold til innsatsen. Andres gjett vises først når dagen er avgjort.</p>
+  <p>«Syk» er et eget bet: blir dagen markert som syk i turnusen, vinner de som bettet «Syk». Blir en forsinkelse registrert eller noen trykker «i tide», vinner «Ikke syk». Ja/nei- og minuttbets får innsatsen tilbake når hun er syk. Du kan ikke bette både på sykdom og forsinkelse samme dag.</p>
   <p>Er du alene om et bet, eller traff alle (eller ingen), får alle innsatsen tilbake.</p>
  </div></div></details>
 
@@ -262,23 +275,23 @@ main{position:relative}
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
 const API='/api/betting',PKEY='forsinkelseslogg:profil',CKEY='forsinkelseslogg:kode';
 const ls={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-let data={profiles:[],bets:[],results:{}},code=ls.get(CKEY),def=ls.get(PKEY),me=def||'p1',side=null,today='';
+let data={profiles:[],bets:[],results:{}},code=ls.get(CKEY),def=ls.get(PKEY),me=def||'p1',side=null,sick=null,today='';
 const $=id=>document.getElementById(id);
 // December (or ?jul): credits are gingerbread biscuits, and the wallet shows heaps of them.
 const JUL=(()=>{let q=location.search+location.hash;try{q+=parent.location.search+parent.location.hash}catch(e){}return new Date().getMonth()===11||/jul/.test(q)})();
 const U=JUL?' pepperkaker':' cr',UL=JUL?'pepperkaker':'credits';
-if(JUL)document.querySelectorAll('.stakeLbl,#ynOwn,#minOwn,#fRules p').forEach(e=>e.childNodes.forEach(n=>{if(n.nodeType===3)n.textContent=n.textContent.replace(/\(credits\)|\(cr\)/,'(pepperkaker)').replace(/credits/g,'pepperkaker')}));
+if(JUL)document.querySelectorAll('.stakeLbl,#ynOwn,#minOwn,#sykOwn,#fRules p').forEach(e=>e.childNodes.forEach(n=>{if(n.nodeType===3)n.textContent=n.textContent.replace(/\(credits\)|\(cr\)/,'(pepperkaker)').replace(/credits/g,'pepperkaker')}));
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const parse=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const dayName=s=>s===today?'i dag':parse(s).toLocaleDateString('nb-NO',{weekday:'short',day:'numeric',month:'short'});
 const cr=n=>Math.round(n)+U;
 const name=id=>(data.profiles.find(p=>p.id===id)||{name:id}).name;
 const signed=n=>{n=Math.round(n);const s=el('span',n>0?'pos':n<0?'neg':'zero',(n>0?'+':'')+n+U);return s};
-const resTxt=r=>r.void?(r.void==='syk'?'syk, innsatsen tilbake':'fri, innsatsen tilbake'):r.min>0?r.min+' min for sent':'i tide';
+const resTxt=r=>r.void?(r.void==='syk'?'meldt syk':'fri, innsatsen tilbake'):r.min>0?r.min+' min for sent':'i tide';
 
-const price=t=>(data.stakes||{yn:5,min:10})[t];
+const price=t=>(data.stakes||{yn:5,min:10,syk:5})[t]||5;
 const STEPS=[5,10,20,50];
-const pick={yn:null,min:null},own={yn:false,min:false};
+const pick={yn:null,min:null,syk:null},own={yn:false,min:false,syk:false};
 const stakeOf=t=>{if(!own[t])return pick[t]??price(t);const n=parseInt($(t+'Stake').value,10);return n>=1?n:0};
 function chipUI(t,avail){
  const C=$(t+'Chips');
@@ -340,11 +353,11 @@ let seen=new Set(),toastT;
 function announce(fresh){
  if(!fresh.length)return;
  fresh.forEach(b=>seen.add(b.id));
- $('toast').textContent=fresh.map(b=>name(b.profile)+' bettet på '+dayName(b.date)+': '+(b.type==='yn'?(b.late?'for sent':'i tide'):'minutter')).join(' · ');
+ $('toast').textContent=fresh.map(b=>name(b.profile)+' bettet på '+dayName(b.date)+': '+(b.type==='yn'?(b.late?'for sent':'i tide'):b.type==='syk'?(b.sick?'syk':'ikke syk'):'minutter')).join(' · ');
  $('toast').hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{$('toast').hidden=true},6000);
 }
 $('toast').onclick=()=>{$('toast').hidden=true};
-const run=async(fn,err)=>{if(err)$(err).textContent='';try{await fn();await load()}catch(x){if(err)$(err).textContent=x.message;else alert(x.message)}};
+const run=async(fn,err)=>{if(err){$(err).textContent='';$(err).classList.remove('dobbel')}try{await fn();await load()}catch(x){if(err)$(err).textContent=x.message;else alert(x.message)}};
 
 $('date').addEventListener('change',()=>{side=null;render()});
 // Quick dates: today and tomorrow (shift work, so weekends count like any other day).
@@ -385,6 +398,8 @@ function quickDates(){
 }
 $('ja').onclick=()=>{side=true;render()};
 $('nei').onclick=()=>{side=false;render()};
+$('sykJa').onclick=()=>{sick=true;render()};
+$('sykNei').onclick=()=>{sick=false;render()};
 $('setDef').onclick=()=>{def=me;ls.set(PKEY,me);render();if(pushOn)savePush()};
 
 // Push notifications: on iPhone they only work from the Home Screen app (iOS 16.4+).
@@ -456,17 +471,30 @@ $('late').onclick=()=>{
 };
 $('onTime').onclick=()=>{const d=$('date').value,tn=window.tidligNaa?tidligNaa(d):null;if(confirm('Avgjøre '+dayName(d)+' som «i tide»?'+(tn?' Hun kom '+tn.kl+', '+tn.tidlig+' min før vakta.':'')))run(async()=>{await api('POST',{action:'settle',date:d,...(tn?{kl:tn.kl,tidlig:tn.tidlig}:{})});if(tn&&tn.tidlig>=5&&window.mirakel)mirakel({tidlig:tn.tidlig,kl:tn.kl,dato:d});else if(window.kasinoMsg)kasinoMsg('tide')})};
 $('reopen').onclick=()=>run(()=>api('POST',{action:'reopen',date:$('date').value}));
+// A player can't bet on both sickness and the delay the same day (the server says no too).
+const DOBBEL_TXT=["Huset sier nei. Hun er enten syk eller sen, ikke begge deler. Selv om hun sikkert har prøvd."];
+const husKommentar=id=>{const e=$(id);e.textContent=dobbelTxt();e.classList.add('dobbel')};
+const dobbelTxt=()=>'🃏 '+DOBBEL_TXT[Math.floor(Math.random()*DOBBEL_TXT.length)]+' Trekk det andre bettet først.';
+const dobbel=t=>data.bets.some(b=>b.date===$('date').value&&b.profile===me&&(b.type==='syk')!==(t==='syk'));
 $('ynGo').onclick=()=>{
+ if(dobbel('yn')){husKommentar('ynErr');return}
  if(side===null){$('ynErr').textContent='Velg ja eller nei.';return}
  const st=stakeOf('yn');if(!st){$('ynErr').textContent='Skriv inn en innsats på minst 1 credit.';return}
  run(async()=>{await api('POST',{action:'bet',type:'yn',profile:me,date:$('date').value,late:side,stake:st});side=null;clearStake('yn');if(window.kasinoMsg)kasinoMsg('bet')},'ynErr');
 };
 $('minGo').onclick=()=>{
+ if(dobbel('min')){husKommentar('minErr');return}
  if($('guess').value===''){$('minErr').textContent='Skriv inn et gjett.';return}
  const st=stakeOf('min');if(!st){$('minErr').textContent='Skriv inn en innsats på minst 1 credit.';return}
  run(async()=>{await api('POST',{action:'bet',type:'min',profile:me,date:$('date').value,guess:$('guess').value,stake:st});clearStake('min');ls.set('forsinkelseslogg:gjett:'+$('date').value+':'+me,$('guess').value);$('guess').value='';if(window.kasinoMsg)kasinoMsg('bet')},'minErr');
 };
-['yn','min'].forEach(t=>{$(t+'Chips').addEventListener('click',render);$(t+'Stake').addEventListener('input',render)});
+$('sykGo').onclick=()=>{
+ if(dobbel('syk')){husKommentar('sykErr');return}
+ if(sick===null){$('sykErr').textContent='Velg syk eller ikke syk.';return}
+ const st=stakeOf('syk');if(!st){$('sykErr').textContent='Skriv inn en innsats på minst 1 credit.';return}
+ run(async()=>{await api('POST',{action:'bet',type:'syk',profile:me,date:$('date').value,sick,stake:st});sick=null;clearStake('syk');if(window.kasinoMsg)kasinoMsg('bet')},'sykErr');
+};
+['yn','min','syk'].forEach(t=>{$(t+'Chips').addEventListener('click',render);$(t+'Stake').addEventListener('input',render)});
 // Remember which sections are open on this device.
 document.querySelectorAll('details.fold').forEach(d=>{const k='forsinkelseslogg:fold:'+d.id;if(ls.get(k)==='1')d.open=true;d.addEventListener('toggle',()=>ls.set(k,d.open?'1':'0'))});
 const withdraw=id=>run(()=>api('DELETE',null,'?id='+encodeURIComponent(id)));
@@ -476,7 +504,9 @@ const delBtn=b=>{const x=el('button','del','Slett bet (admin)');x.type='button';
 
 $('whoSel').onchange=e=>{me=e.target.value;render()};
 let tab=ls.get('forsinkelseslogg:fane')||'yn';
-const showTab=()=>{['yn','min'].forEach(t=>{const on=t===tab,b=$(t==='yn'?'tabYn':'tabMin');b.setAttribute('aria-selected',on);$(t==='yn'?'pnYn':'pnMin').hidden=!on})};
+const TABID={yn:'Yn',min:'Min',syk:'Syk'};
+if(!TABID[tab])tab='yn';
+const showTab=()=>{Object.keys(TABID).forEach(t=>{const on=t===tab;$('tab'+TABID[t]).setAttribute('aria-selected',on);$('pn'+TABID[t]).hidden=!on})};
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;ls.set('forsinkelseslogg:fane',tab);showTab()});
 showTab();
 // Settings (profile and notifications) open from the gear in the top left corner.
@@ -577,8 +607,8 @@ function render(){
  quickDates();
  const d=$('date').value,res=data.results[d],bets=data.bets.filter(b=>b.date===d);
  if(window.bord&&data.profiles.length)bord($('bord'),{profiles:data.profiles,me,date:d,bets,res,unit:U.trim(),resTxt,guessOf:b=>b.guess??(b.profile===me?ls.get('forsinkelseslogg:gjett:'+b.date+':'+me)||null:null)});
- const yn=bets.filter(b=>b.type==='yn'),mn=bets.filter(b=>b.type==='min');
- const myYn=yn.find(b=>b.profile===me),myMin=mn.find(b=>b.profile===me);
+ const yn=bets.filter(b=>b.type==='yn'),mn=bets.filter(b=>b.type==='min'),sk=bets.filter(b=>b.type==='syk');
+ const myYn=yn.find(b=>b.profile===me),myMin=mn.find(b=>b.profile===me),mySyk=sk.find(b=>b.profile===me);
  const past=d&&today&&d<today;
  vakt(d);
  $('status').replaceChildren();
@@ -590,19 +620,23 @@ function render(){
 
  $('betting').hidden=!!res||past;
  $('ja').setAttribute('aria-pressed',side===true);$('nei').setAttribute('aria-pressed',side===false);
+ $('sykJa').setAttribute('aria-pressed',sick===true);$('sykNei').setAttribute('aria-pressed',sick===false);
  const sum=a=>a.reduce((s,b)=>s+b.stake,0);
  const ja=yn.filter(b=>b.late),nei=yn.filter(b=>!b.late);
  const who=a=>a.map(b=>name(b.profile)).join(', ')||'ingen';
  const alone=a=>a.length===1?(a[0].profile===me?' Ingen andre har bettet ennå. Blir du alene, får du innsatsen tilbake.':' Blir '+name(a[0].profile)+' alene, får '+name(a[0].profile)+' innsatsen tilbake.'):'';
  $('ynPool').textContent=yn.length?'Ja: '+cr(sum(ja))+' ('+who(ja)+') · Nei: '+cr(sum(nei))+' ('+who(nei)+').'+(ja.length&&nei.length?'':alone(yn)||' Alle har valgt det samme så langt.'):'Ingen bets ennå.';
+ const sj=sk.filter(b=>b.sick),sn=sk.filter(b=>!b.sick);
+ $('sykPool').textContent=sk.length?'Syk: '+cr(sum(sj))+' ('+who(sj)+') · Ikke syk: '+cr(sum(sn))+' ('+who(sn)+').'+(sj.length&&sn.length?'':alone(sk)||' Alle har valgt det samme så langt.'):'Ingen bets ennå.';
  $('minPool').textContent=mn.length?'Pott: '+cr(sum(mn))+' fra '+mn.map(b=>name(b.profile)).join(', ')+'.'+alone(mn):'Ingen bets ennå.';
  const mine=(box,b,txt)=>{const m=$(box);m.hidden=!b;m.replaceChildren();if(!b)return;const w=el('button',null,'Trekk');w.type='button';w.onclick=()=>withdraw(b.id);m.append(el('span',null,txt),w)};
- $('tabYn').classList.toggle('has',!!myYn);$('tabMin').classList.toggle('has',!!myMin);
+ $('tabYn').classList.toggle('has',!!myYn);$('tabMin').classList.toggle('has',!!myMin);$('tabSyk').classList.toggle('has',!!mySyk);
+ mine('sykMine',mySyk,mySyk&&'Ditt bet: '+(mySyk.sick?'Syk':'Ikke syk')+', '+mySyk.stake+U+'. Velg på nytt for å endre.');
  mine('ynMine',myYn,myYn&&'Ditt bet: '+(myYn.late?'Ja':'Nei')+', '+myYn.stake+U+'. Velg på nytt for å endre.');
  mine('minMine',myMin,myMin&&'Ditt bet: '+(myMin.guess??(ls.get('forsinkelseslogg:gjett:'+d+':'+me)||'?'))+' min, '+myMin.stake+U+'. Skriv nytt gjett for å endre.');
- $('ynGo').textContent=(myYn?'Endre bet':'Sett bet')+' · '+stakeOf('yn')+U;$('minGo').textContent=(myMin?'Endre bet':'Sett bet')+' · '+stakeOf('min')+U;
+ $('ynGo').textContent=(myYn?'Endre bet':'Sett bet')+' · '+stakeOf('yn')+U;$('minGo').textContent=(myMin?'Endre bet':'Sett bet')+' · '+stakeOf('min')+U;$('sykGo').textContent=(mySyk?'Endre bet':'Sett bet')+' · '+stakeOf('syk')+U;
  const myBal=Math.floor((data.profiles.find(p=>p.id===me)||{}).balance??0);
- chipUI('yn',myBal+(myYn?myYn.stake:0));chipUI('min',myBal+(myMin?myMin.stake:0));
+ chipUI('yn',myBal+(myYn?myYn.stake:0));chipUI('min',myBal+(myMin?myMin.stake:0));chipUI('syk',myBal+(mySyk?mySyk.stake:0));
 
  const R=$('result');R.replaceChildren();
  if(res&&bets.length){const blk=dayBlock(d,res,bets);R.appendChild(blk);
@@ -644,6 +678,8 @@ function render(){
  days.forEach(x=>H.appendChild(dayBlock(x,data.results[x],data.bets.filter(b=>b.date===x))));
  $('reset').hidden=!cur;
 }
+// A bet that was won or lost (not refunded because of a sick day or a day off).
+const teller=b=>{const r=data.results[b.date]||{};return !r.void||(b.type==='syk'&&r.void==='syk')};
 let selMonth='',prevOrder=null,prevMonth='';const flipped=new Set();
 // Jackpot: when a newly settled day gave you a profit, rain gold coins once.
 function jackpot(){
@@ -655,12 +691,12 @@ function jackpot(){
  try{localStorage.setItem(K,JSON.stringify(days))}catch(e){}
  const won=data.bets.filter(b=>fresh.includes(b.date)&&b.profile===me&&b.payout!=null).reduce((s,b)=>s+b.payout-b.stake,0);
  // A bet lost or won on the newly settled days gets a remark (fx.js waits until the winner reveal is closed).
- const mine=data.bets.filter(b=>fresh.includes(b.date)&&b.profile===me&&b.payout!=null&&!(data.results[b.date]||{}).void);
- if(mine.length&&won&&window.kasinoMsg)kasinoMsg(won>0?'vunnet':mine.some(b=>!(data.results[b.date]||{}).min)?'taptTide':'tapt');
+ const mine=data.bets.filter(b=>fresh.includes(b.date)&&b.profile===me&&b.payout!=null&&teller(b));
+ if(mine.length&&won&&window.kasinoMsg)kasinoMsg(won>0?'vunnet':mine.some(b=>{const r=data.results[b.date]||{};return !r.min&&!r.void})?'taptTide':'tapt');
  const anim=window.fx&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
  const chipsIn=()=>{const pb=document.querySelector('.player[aria-pressed=true]');if(pb&&anim){fx.flash(pb);fx.landChips(pb,Math.round(won/5))}};
  // Winner reveal (vinner.js) for the latest newly settled day that had bets; each phone sees it once.
- const day=fresh.filter(x=>!data.results[x].void&&data.bets.some(b=>b.date===x)).sort().pop();
+ const day=fresh.filter(x=>data.bets.some(b=>b.date===x&&teller(b))).sort().pop();
  // Mirakel (mirakel.js): a day settled «i tide» ≥5 min before shift start. The winner reveal waits for it.
  const mir=fresh.filter(x=>(data.results[x]||{}).tidlig>=5).sort().pop();
  if(mir&&window.mirakel){const r=data.results[mir];if(mirakel({tidlig:r.tidlig,kl:r.kl,dato:mir,onClose:()=>{if(day)showWin()}}))return}
@@ -669,7 +705,7 @@ function jackpot(){
  if(day&&window.vinner){
   const net={};data.bets.filter(b=>b.date===day).forEach(b=>{net[b.profile]=(net[b.profile]||0)+(b.payout??b.stake)-b.stake});
   const r=data.results[day],t=parse(day).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'});
-  vinner({dag:t[0].toUpperCase()+t.slice(1),resultat:r.min>0?'Hun kom '+r.min+' min for sent':'Hun kom i tide',enhet:U.trim(),rader:Object.entries(net).map(([p,n])=>({navn:name(p),netto:n})).sort((a,b)=>b.netto-a.netto)});
+  vinner({dag:t[0].toUpperCase()+t.slice(1),resultat:r.void==='syk'?'Hun er meldt syk':r.min>0?'Hun kom '+r.min+' min for sent':'Hun kom i tide',enhet:U.trim(),rader:Object.entries(net).map(([p,n])=>({navn:name(p),netto:n})).sort((a,b)=>b.netto-a.netto)});
   if(won>0)setTimeout(chipsIn,4500);
   return;
  }
@@ -682,12 +718,12 @@ const monthName=(m,cap)=>{const[y,mo]=m.split('-').map(Number),t=new Date(y,mo-1
 $('month').addEventListener('change',e=>{selMonth=e.target.value;render()});
 $('reset').onclick=()=>{if(confirm('Nullstille alle bets i '+monthName(data.month,false)+'? Alle får 100 '+UL+' igjen, og bets lagt inn hittil denne måneden teller ikke lenger.'))run(()=>api('POST',{action:'reset'}))};
 const when=t=>{const d=new Date(t),tm=d.toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'});return(d.toDateString()===new Date().toDateString()?'i dag':d.toLocaleDateString('nb-NO',{day:'numeric',month:'short'}))+' kl. '+tm};
-const betTxt=b=>b.type==='yn'?(b.late?'for sent':'i tide'):(b.guess==null?'minutter (skjult)':'gjettet '+b.guess+' min');
+const betTxt=b=>b.type==='yn'?(b.late?'for sent':'i tide'):b.type==='syk'?(b.sick?'syk':'ikke syk'):(b.guess==null?'minutter (skjult)':'gjettet '+b.guess+' min');
 function dayBlock(d,res,bets){
  const w=el('div','day'),h=el('h3',null,dayName(d));h.appendChild(el('span',null,resTxt(res)));w.appendChild(h);
  bets.sort((a,b)=>a.type<b.type?1:-1).forEach(b=>{
   const r=el('div','line'),a=el('div',null,name(b.profile)+': '+betTxt(b));
-  a.appendChild(el('small',null,(b.type==='yn'?'Ja/nei':'Minutter')+' · innsats '+b.stake+U));
+  a.appendChild(el('small',null,(b.type==='yn'?'Ja/nei':b.type==='syk'?'Syk':'Minutter')+' · innsats '+b.stake+U));
   r.append(a,b.payout===b.stake?el('span','zero','Tilbake'):signed(b.payout-b.stake));if(isAdmin())r.appendChild(delBtn(b));w.appendChild(r);
  });
  return w;

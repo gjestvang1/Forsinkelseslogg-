@@ -310,9 +310,9 @@ function spill(){
  let me='';try{me=localStorage.getItem('forsinkelseslogg:profil')||''}catch(e){}
  const U=document.documentElement.classList.contains('jul')?' pepperkaker':' cr';
  const st=d.profiles.map(p=>{
-  const mine=d.bets.filter(b=>b.profile===p.id&&d.results[b.date]&&!d.results[b.date].void&&b.payout!=null);
+  const mine=d.bets.filter(b=>b.profile===p.id&&d.results[b.date]&&(!d.results[b.date].void||(b.type==='syk'&&d.results[b.date].void==='syk'))&&b.payout!=null);
   const won=mine.filter(b=>b.payout>b.stake),lost=mine.filter(b=>b.payout<b.stake);
-  const cat={'Ja, sent':0,'Nei, i tide':0,'Minutter':0};mine.forEach(b=>cat[b.type==='min'?'Minutter':b.late?'Ja, sent':'Nei, i tide']++);
+  const cat={'Ja, sent':0,'Nei, i tide':0,'Minutter':0,'Syk':0};mine.forEach(b=>cat[b.type==='min'?'Minutter':b.type==='syk'?'Syk':b.late?'Ja, sent':'Nei, i tide']++);
   const fav=Object.entries(cat).sort((a,b)=>b[1]-a[1])[0];
   const mins=mine.filter(b=>b.type==='min'&&b.guess!=null),miss=mins.length?mins.reduce((s,b)=>s+Math.abs(b.guess-d.results[b.date].min),0)/mins.length:null;
   return {p,n:mine.length,hit:won.length+lost.length?Math.round(won.length/(won.length+lost.length)*100):null,best:won.length?Math.max(...won.map(b=>b.payout-b.stake)):0,fav:fav[1]?fav[0]:'–',miss,net:mine.reduce((s,b)=>s+b.payout-b.stake,0)};
