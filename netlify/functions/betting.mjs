@@ -19,6 +19,9 @@ const authorized = (req) => {
 };
 
 const ADMIN = "p1";
+// Double bet on sickness and delay the same day: a remark from the house instead of a plain error.
+const DOBBEL_TXT = ["Pent forsøk. Å bette på at hun er syk OG for sen er som å gipse begge armene og håpe å klø seg på nesa.", "Huset sier nei. Hun er enten syk eller sen, ikke begge deler. Selv om hun sikkert har prøvd.", "Dobbeltbetting på sykdom og forsinkelse? Det er innsidehandel med snørr.", "Dealeren ser deg. Velg om du vil ha henne i senga eller på bussen, ikke begge.", "Dette lukter forsikringssvindel. Ett bet per dag på henne: syk ELLER sen.", "Hun kan ikke komme for sent til en vakt hun ligger hjemme og snyter seg gjennom.", "Du prøver å tette begge hullene samtidig. Det funker like dårlig her som med omgangssyke.", "Selv et CTS-inngrep tar bare én hånd om gangen. Syk eller sen, velg én."];
+const dobbel = () => "🃏 " + DOBBEL_TXT[Math.floor(Math.random() * DOBBEL_TXT.length)] + " Trekk det andre bettet først.";
 
 export default async (req) => {
   const s = store();
@@ -119,10 +122,14 @@ export default async (req) => {
 
     if (b.action === "bet") {
       if (!PROFILES.includes(b.profile)) return json({ error: "Ukjent profil" }, 400);
-      if (!["yn", "min"].includes(b.type)) return json({ error: "Ukjent bettype" }, 400);
+      if (!["yn", "min", "syk"].includes(b.type)) return json({ error: "Ukjent bettype" }, 400);
       if (b.date < todayOslo()) return json({ error: "Kan ikke bette på en dag som har vært" }, 400);
       if (res[b.date]) return json({ error: "Dagen er allerede avgjort" }, 409);
       if (plan[b.date] === "SYK" || plan[b.date] === "FRI") return json({ error: plan[b.date] === "SYK" ? "Hun er meldt syk den dagen." : "Hun har fri den dagen." }, 400);
+      // One player can't bet both on sickness and on the delay the same day.
+      const mineToday = bets.filter((x) => x.date === b.date && x.profile === b.profile);
+      if (mineToday.some((x) => (x.type === "syk") !== (b.type === "syk")))
+        return json({ error: dobbel() }, 409);
       const stake = b.stake == null || b.stake === "" ? STAKES[b.type] : Number(b.stake);
       if (!Number.isInteger(stake) || stake < 1) return json({ error: "Innsatsen må være et helt tall, minst 1" }, 400);
       const key = `bet/${b.date}/${b.profile}/${b.type}`;
@@ -134,6 +141,9 @@ export default async (req) => {
       if (b.type === "yn") {
         if (typeof b.late !== "boolean") return json({ error: "Velg ja eller nei" }, 400);
         rec.late = b.late;
+      } else if (b.type === "syk") {
+        if (typeof b.sick !== "boolean") return json({ error: "Velg syk eller ikke syk" }, 400);
+        rec.sick = b.sick;
       } else {
         const guess = parseInt(b.guess, 10);
         if (!(guess >= 0 && guess <= 600)) return json({ error: "Gjett mellom 0 og 600 minutter" }, 400);
@@ -149,7 +159,7 @@ export default async (req) => {
 
   if (req.method === "DELETE") {
     const id = new URL(req.url).searchParams.get("id") || "";
-    const m = id.match(/^bet\/(\d{4}-\d{2}-\d{2})\/(p[123])\/(yn|min)$/);
+    const m = id.match(/^bet\/(\d{4}-\d{2}-\d{2})\/(p[123])\/(yn|min|syk)$/);
     if (!m) return json({ error: "Mangler id" }, 400);
     // The admin (profile p1, Andreas) may delete any bet, also on a settled day,
     // e.g. one placed on the wrong date. Balances are recomputed from the bets.

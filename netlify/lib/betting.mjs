@@ -9,7 +9,7 @@ const START = 100;
 // G3: the bank lends LOAN once a month to a nearly broke player; REPAY is taken from next month's start.
 const LOAN = 20, REPAY = 25, LOAN_BELOW = 10, GAVE = 10;
 // Fixed price per bet type, so every bet in a pot weighs the same.
-const STAKES = { yn: 5, min: 10 };
+const STAKES = { yn: 5, min: 10, syk: 5 };
 const PROFILES = ["p1", "p2", "p3"];
 const DEFAULT_NAMES = { p1: "Spiller 1", p2: "Spiller 2", p3: "Spiller 3" };
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -20,7 +20,8 @@ const all = (s, prefix) => listAll(s, prefix);
 // Result per date in minutes (0 = on time). A manual result wins; otherwise
 // the day is settled by the delay log as soon as it has an entry.
 // G5: a day marked sick (SYK) or taken off (FRI) in the shift plan, with bets on it and nothing
-// registered, is void: everyone gets their stake back.
+// registered, is void for the delay bets (yn/min): their stakes come back. Sickness bets (syk)
+// are settled instead: SYK means «syk» won; a registered delay or «i tide» means she came.
 function results(rounds, log, plan, betDates) {
   const r = {};
   for (const e of log) r[e.date] = { min: (r[e.date]?.min || 0) + e.min, source: "logg" };
@@ -57,8 +58,12 @@ function compute(bets, res) {
     const date = k.split("|")[0], r = res[date];
     const balances = (months[monthOf(date)] ||= fresh());
     if (!r) { group.forEach((b) => { b.payout = null; balances[b.profile] -= b.stake; }); continue; }
-    if (r.void) { group.forEach((b) => (b.payout = b.stake)); continue; }
-    if (group[0].type === "yn") payPool(group, (b) => b.late === (r.min > 0));
+    if (group[0].type === "syk") {
+      // Sickness bet: FRI refunds; SYK in the plan = sick; any other result = she came to work.
+      if (r.void === "fri") group.forEach((b) => (b.payout = b.stake));
+      else payPool(group, (b) => b.sick === (r.void === "syk"));
+    } else if (r.void) { group.forEach((b) => (b.payout = b.stake)); continue; }
+    else if (group[0].type === "yn") payPool(group, (b) => b.late === (r.min > 0));
     else {
       const best = Math.min(...group.map((b) => Math.abs(b.guess - r.min)));
       payPool(group, (b) => Math.abs(b.guess - r.min) === best);
@@ -133,7 +138,7 @@ async function push(s, msg, exceptProfile) {
 }
 
 function notifyBet(s, rec, names, changed) {
-  const what = rec.type === "yn" ? (rec.late ? "for sent" : "i tide") : "antall minutter";
+  const what = rec.type === "yn" ? (rec.late ? "for sent" : "i tide") : rec.type === "syk" ? (rec.sick ? "syk" : "ikke syk") : "antall minutter";
   return push(s, {
     title: "Bet placed",
     body: `${names[rec.profile]}${changed ? " endret bettet" : ""}: ${what} (${dayLabel(rec.date)}), ${rec.stake} ${todayOslo().slice(5, 7) === "12" ? "pepperkaker" : "credits"}`,
@@ -156,7 +161,7 @@ async function notifyResult(s, date) {
   });
   return push(s, {
     title: `Resultat ${dayLabel(date)}: ${r.void ? voidTxt(r) : r.min > 0 ? r.min + " min for sent" : "i tide"}`,
-    body: r.void ? "Alle får innsatsen tilbake." : parts.join(" · "),
+    body: day.every((b) => b.payout === b.stake) ? "Alle får innsatsen tilbake." : parts.join(" · ") + (r.void === "syk" && day.some((b) => b.type !== "syk") ? " (forsinkelsesbets tilbake)" : ""),
     tag: "result-" + date,
     kind: "result",
   });
