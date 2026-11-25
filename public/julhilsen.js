@@ -4,7 +4,10 @@
 //    once per profile, server-checked).
 //  • Julaften: a short extra card on 24 December.
 //  • St. Lucia: on 13 December a Lucia procession walks across the dark; the last one limps in late.
-// Previews (shown every time, gift button inactive outside December): ?jul ?julaften ?lucia
+//  • Ferie: 7 December 2026 she is back from holiday. A plane tows a «TILBAKE!» banner across,
+//    then a welcome-back card with today's shift and a button straight to betting. Queued after the
+//    December card, so the two never collide.
+// Previews (shown every time, gift button inactive outside December): ?jul ?julaften ?lucia ?ferie
 (() => {
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ls = { get: (k) => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -16,6 +19,7 @@
   // H7, H8, J1 and P3 from the suggestions, all on one card (the user's pick of three combinations).
   const JUL = { h: "Glade jul!", sub: "Sjetongene er byttet ut med pepperkaker. Desember har 31 dager og like mange sjanser til å komme for sent.", txt: "Nissen rekker hele verden på én natt. Hun rekker ikke 07:30. Pepperkakene er ferske. Det er ikke unnskyldningene hennes." };
   const JULAFTEN = { h: "God julaften!", sub: "I dag er det lov å komme for sent.", txt: "Til julemiddagen, altså. Ikke på jobb. Nissen fører logg han også." };
+  const FERIE = { h: "Velkommen tilbake!", sub: "Ferien er over. Forsinkelsene er ikke det.", txt: "Hun er tilbake fra ferie, uthvilt, solbrun i sjela og klar til å være mer forsinket enn noensinne. Kofferten er pakket ut. Vekkerklokka er fortsatt ikke stilt." };
   const LUCIA = { h: "God lucia!", txt: "Lucia rakk ikke fram med lussekattene i tide. Vi skjønner hvem hun har lært det av." };
 
   const CSS = `
@@ -62,6 +66,14 @@
 .jhL::after{content:"";position:absolute;left:8px;top:2px;width:14px;height:14px;border-radius:50%;background:#F4D9C2;box-shadow:0 -6px 0 -3px #FFD86B,-5px -5px 0 -4px #FFD86B,5px -5px 0 -4px #FFD86B,0 -10px 14px 2px rgba(255,200,90,.55)}
 .jhL i{position:absolute;left:12px;top:22px;width:6px;height:12px;background:#FFF;border-radius:2px;box-shadow:0 -7px 8px 1px rgba(255,210,110,.9)}
 .jhL.crown::after{box-shadow:0 -7px 0 -3px #FFD86B,-5px -6px 0 -3px #FFD86B,5px -6px 0 -3px #FFD86B,-8px -2px 0 -4px #FFD86B,8px -2px 0 -4px #FFD86B,0 -12px 20px 4px rgba(255,200,90,.75)}
+/* back from holiday */
+.jh.ferie{background:radial-gradient(ellipse at 50% 20%,rgba(30,90,120,.8),rgba(20,3,6,.94) 80%)}
+.jhPlane{position:absolute;top:18%;left:0;display:flex;align-items:center;gap:0;white-space:nowrap;transform:translateX(-420px)}
+.jhPlane b{font-size:40px;line-height:1;transform:rotate(45deg)}
+.jhRope{width:34px;height:2px;background:rgba(255,255,255,.75)}
+.jhBanner{background:#FFF8E8;color:#8A1C2E;font:900 1.15rem 'Playfair Display',Georgia,serif;letter-spacing:.06em;padding:6px 14px;border:2px solid #E5B64A;border-radius:4px 14px 14px 4px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.jhVakt{margin:0;padding:9px 10px;border-radius:12px;background:rgba(138,28,46,.08);font:700 .9rem/1.35 Inter,system-ui,sans-serif;color:#6B1824}
+.jhVakt b{color:#8A1C2E}
 @media (prefers-reduced-motion:reduce){.jh,.jhCard{animation:none}}`;
   const MAN = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cg stroke='%237A3B12' stroke-width='6.4' stroke-linecap='round' fill='none'%3E%3Cpath d='M3.5 11.5H16.5M10 8v7.5M10 15.5 6 21M10 15.5 14 21'/%3E%3Ccircle cx='10' cy='5' r='1.6' stroke-width='6.6'/%3E%3C/g%3E%3Cg stroke='%23C27237' stroke-width='4.6' stroke-linecap='round' fill='none'%3E%3Cpath d='M3.5 11.5H16.5M10 8v7.5M10 15.5 6 21M10 15.5 14 21'/%3E%3Ccircle cx='10' cy='5' r='1.6' stroke-width='4.8'/%3E%3C/g%3E%3Cg fill='%23fff'%3E%3Ccircle cx='8.6' cy='4.6' r='.75'/%3E%3Ccircle cx='11.4' cy='4.6' r='.75'/%3E%3Ccircle cx='10' cy='10.6' r='.8'/%3E%3Ccircle cx='10' cy='13.4' r='.8'/%3E%3C/g%3E%3Cpath d='M8.4 6.6q1.6 1 3.2 0' stroke='%23fff' stroke-width='.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")";
 
@@ -69,6 +81,7 @@
   const due = (key, when, flag) => { if (flag.test(q)) return true; return when && ls.get(key) !== y; };
   if (due("forsinkelseslogg:julhilsen", des, /[?&]jul\b/)) queue.push(["forsinkelseslogg:julhilsen", jul]);
   if (due("forsinkelseslogg:lucia", md === "12-13", /lucia/)) queue.push(["forsinkelseslogg:lucia", lucia]);
+  if (due("forsinkelseslogg:ferie", y + "-" + md === "2026-12-07", /ferie/)) queue.push(["forsinkelseslogg:ferie", ferie]);
   if (due("forsinkelseslogg:julaften", md === "12-24", /julaften/)) queue.push(["forsinkelseslogg:julaften", julaften]);
   if (!queue.length) return;
 
@@ -183,6 +196,32 @@
   function julaften(done) {
     const o = overlay(), k = card(o, "🎁", JULAFTEN, null, "God jul! 🎅", done);
     const r = k.getBoundingClientRect(); burst(o, r.left + r.width / 2, r.top + 40, 18);
+  }
+
+  function ferie(done) {
+    const o = overlay("ferie");
+    const showCard = () => {
+      const iso = `${y}-${md}`;
+      let v = null;
+      try { const w = document.getElementById("f0").contentWindow; v = w.vaktFor && w.vaktFor(iso); } catch (e) {}
+      const info = mk("p", "jhVakt");
+      if (v) {
+        info.append("Dagens vakt: ", mk("b", null, v.kode), " · oppmøte ", mk("b", null, v.start), ".");
+        info.append(mk("br"), "Hvor mange minutter har ferien kostet? Sats pepperkakene dine.");
+      } else info.textContent = "Bettingen er åpen igjen. Sats pepperkakene på hvor mye ferien har kostet.";
+      const k = card(o, "🧳", FERIE, info, "Bet på dagens vakt 🍪", () => {
+        try { const w = document.getElementById("f1").contentWindow; if (v && w.velgBetDag) w.velgBetDag(iso); window.pager && window.pager.go(1); } catch (e) {}
+        done && done();
+      });
+      const x = mk("button", "jhOk", "Bare lukk"); x.type = "button"; x.onclick = () => close(o, done); k.appendChild(x);
+      const r = k.getBoundingClientRect(); burst(o, r.left + r.width / 2, r.top + 40, 18);
+    };
+    if (still) return showCard();
+    // The plane tows a banner across the sky, then the card pops up.
+    const pl = mk("div", "jhPlane"); pl.append(mk("div", "jhBanner", "TILBAKE FRA FERIE!"), mk("div", "jhRope"), mk("b", null, "✈️"));
+    o.appendChild(pl);
+    const W = innerWidth;
+    pl.animate([{ transform: "translate(-420px,10px) rotate(2deg)" }, { transform: `translate(${W * .5 - 160}px,-14px) rotate(-2deg)`, offset: .5 }, { transform: `translate(${W + 40}px,4px) rotate(2deg)` }], { duration: 4200, easing: "ease-in-out", fill: "forwards" }).onfinish = () => { pl.remove(); showCard(); };
   }
 
   function lucia(done) {
